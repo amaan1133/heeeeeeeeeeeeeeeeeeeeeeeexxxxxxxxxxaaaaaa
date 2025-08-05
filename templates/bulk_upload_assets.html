@@ -1,0 +1,87 @@
+
+{% extends "base.html" %}
+
+{% block title %}Bulk Upload Assets - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-upload me-2"></i>Bulk Upload Assets
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Upload Instructions</h6>
+                        <ul class="mb-0">
+                            <li>Upload a CSV or Excel file with asset data</li>
+                            <li>Required columns: <code>asset_tag</code>, <code>name</code></li>
+                            <li>Optional columns: <code>category</code>, <code>asset_type</code>, <code>brand</code>, <code>model</code>, <code>serial_number</code>, <code>condition</code>, <code>location</code>, <code>status</code>, <code>purchase_cost</code>, <code>current_value</code>, <code>purchase_date</code>, <code>warranty_expiry</code>, <code>notes</code></li>
+                            <li>For Consumable Assets: <code>current_quantity</code>, <code>minimum_threshold</code>, <code>unit_of_measurement</code></li>
+                            <li>Date format: YYYY-MM-DD or MM/DD/YYYY</li>
+                        </ul>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="bulk_file" class="form-label">Select File *</label>
+                            <input type="file" class="form-control" id="bulk_file" name="bulk_file" 
+                                   accept=".csv,.xlsx,.xls" required>
+                            <div class="form-text">Supported formats: CSV, Excel (.xlsx, .xls)</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_assets') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Assets
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Upload Assets
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Sample CSV Format:</h6>
+                            <pre class="bg-light p-3 small">asset_tag,name,category,asset_type,brand,model,condition,status,purchase_cost,current_quantity
+AST001,Laptop Dell,IT Equipment,Fixed Asset,Dell,Latitude 5520,Good,Available,45000,1
+AST002,Office Chair,Furniture,Fixed Asset,Herman Miller,Aeron,Excellent,Available,25000,1
+AST003,A4 Paper,Office Supplies,Consumable Asset,JK Paper,Copier,Good,Available,500,100</pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Asset Type Options:</h6>
+                            <ul class="small">
+                                <li>Fixed Asset</li>
+                                <li>Consumable Asset</li>
+                            </ul>
+                            
+                            <h6>Category Options:</h6>
+                            <ul class="small">
+                                <li>IT Equipment</li>
+                                <li>Furniture</li>
+                                <li>Vehicle</li>
+                                <li>Tools</li>
+                                <li>Office Equipment</li>
+                                <li>Other</li>
+                            </ul>
+                            
+                            <h6>Status Options:</h6>
+                            <ul class="small">
+                                <li>Available</li>
+                                <li>In Use</li>
+                                <li>Maintenance</li>
+                                <li>Disposed</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

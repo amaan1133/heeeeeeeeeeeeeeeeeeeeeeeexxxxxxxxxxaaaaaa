@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Hexamed Asset Management{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col">
+            <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+            <p class="text-muted">System administration and user management</p>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6>Total Users</h6>
+                            <h3 class="mb-0">{{ stats.total_users }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6>Active Users</h6>
+                            <h3 class="mb-0">{{ stats.active_users }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6>Total Requests</h6>
+                            <h3 class="mb-0">{{ stats.total_requests }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clipboard-list fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6>Pending Requests</h6>
+                            <h3 class="mb-0">{{ stats.pending_requests }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danger Zone (MD Only) -->
+    {% if session.role == 'MD' %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Danger Zone - System Administrator Only</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" role="alert">
+                        <strong>Warning!</strong> The actions below will permanently delete ALL application data and cannot be undone.
+                    </div>
+                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllDataModal">
+                        <i class="fas fa-trash-alt"></i> Delete All Application Data
+                    </button>
+                    <p class="text-muted mt-2 mb-0">
+                        This will delete all users, assets, requests, bills, activity logs, and uploaded files from the system.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- User Management -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> User Management</h5>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="fas fa-user-plus"></i> Add User
+                    </button>
+                </div></div>
+    </div>
+</div>
+
+<!-- Delete All Data Modal -->
+{% if session.role == 'MD' %}
+<div class="modal fade" id="deleteAllDataModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> Delete All Application Data
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <strong>CRITICAL WARNING!</strong> This action will permanently delete:
+                </div>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-users text-danger"></i> All user accounts (including yours)</li>
+                    <li><i class="fas fa-box text-danger"></i> All assets and inventory data</li>
+                    <li><i class="fas fa-clipboard-list text-danger"></i> All requests and approvals</li>
+                    <li><i class="fas fa-receipt text-danger"></i> All bills and financial records</li>
+                    <li><i class="fas fa-history text-danger"></i> All activity logs and audit trails</li>
+                    <li><i class="fas fa-file text-danger"></i> All uploaded files</li>
+                </ul>
+                <div class="alert alert-warning">
+                    <strong>Note:</strong> After deletion, you will be logged out and a new admin account will be created with default credentials.
+                </div>
+                <div class="mb-3">
+                    <label for="confirmationText" class="form-label">
+                        Type <strong>DELETE ALL DATA</strong> to confirm:
+                    </label>
+                    <input type="text" class="form-control" id="confirmationText" placeholder="DELETE ALL DATA">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteAll" disabled onclick="deleteAllData()">
+                    <i class="fas fa-trash-alt"></i> Delete All Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('confirmationText').addEventListener('input', function() {
+    const confirmButton = document.getElementById('confirmDeleteAll');
+    if (this.value === 'DELETE ALL DATA') {
+        confirmButton.disabled = false;
+    } else {
+        confirmButton.disabled = true;
+    }
+});
+
+function deleteAllData() {
+    if (confirm('Are you absolutely sure? This cannot be undone!')) {
+        window.location.href = '{{ url_for("delete_all_data") }}';
+    }
+}
+</script>
+{% endif %}
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Full Name</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Floor</th>
+                                    <th>Department</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td>{{ user.full_name }}</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        {% if user.role == 'MD' %}
+                                            <span class="badge bg-danger">{{ user.role }}</span>
+                                        {% elif user.role == 'Admin' %}
+                                            <span class="badge bg-warning">{{ user.role }}</span>
+                                        {% elif user.role == 'Concern Manager' %}
+                                            <span class="badge bg-info">{{ user.role }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ user.role }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.floor or 'N/A' }}</td>
+                                    <td>{{ user.department or 'N/A' }}</td>
+                                    <td>
+                                        {% if user.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.created_at.strftime('%m/%d/%Y') }}</td>
+                                    <td>
+                                        {% if user.username != 'admin' %}
+                                        <a href="{{ url_for('toggle_user', user_id=user.id) }}" 
+                                           class="btn btn-sm {% if user.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                                           onclick="return confirm('{% if user.is_active %}Deactivate{% else %}Activate{% endif %} this user?')">
+                                            {% if user.is_active %}
+                                                <i class="fas fa-user-times"></i>
+                                            {% else %}
+                                                <i class="fas fa-user-check"></i>
+                                            {% endif %}
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_user') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">Full Name *</label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username *</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password *</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role *</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="">Select Role</option>
+                            <option value="User">User</option>
+                            <option value="Concern Manager">Concern Manager</option>
+                            <option value="Accounts/SCM">Accounts/SCM</option>
+                            <option value="Admin">Admin</option>
+                            {% if session.role == 'MD' %}
+                            <option value="MD">MD</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="floor" class="form-label">Floor</label>
+                        <select class="form-select" id="floor" name="floor">
+                            <option value="">Select Floor</option>
+                            <option value="Ground Floor">Ground Floor - Radiology</option>
+                            <option value="1st Floor">1st Floor - Lab</option>
+                            <option value="2nd Floor">2nd Floor - OPD</option>
+                            <option value="3rd Floor">3rd Floor - Call Center</option>
+                            <option value="4th Floor">4th Floor - Admin Block</option>
+                            <option value="All">All Floors (Admin/SCM/MD)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="department" class="form-label">Department</label>
+                        <select class="form-select" id="department" name="department">
+                            <option value="">Select Department</option>
+                            <option value="Radiology">Radiology</option>
+                            <option value="Lab">Lab</option>
+                            <option value="OPD">OPD</option>
+                            <option value="Call Center">Call Center</option>
+                            <option value="Admin Block">Admin Block</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

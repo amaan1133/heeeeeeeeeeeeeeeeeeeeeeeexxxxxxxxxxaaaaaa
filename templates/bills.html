@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Bills Management - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-file-invoice-dollar"></i> Bills Management</h2>
+                <div>
+                    <a href="{{ url_for('download_bills') }}" class="btn btn-outline-success me-2">
+                        <i class="fas fa-download"></i> Download CSV
+                    </a>
+                    {% if user.role == 'Accounts/SCM' %}
+                    <a href="{{ url_for('scm_upload_bill') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Upload Bill
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="Pending" {{ 'selected' if selected_status == 'Pending' }}>Pending</option>
+                                <option value="Verified" {{ 'selected' if selected_status == 'Verified' }}>Verified</option>
+                                <option value="Rejected" {{ 'selected' if selected_status == 'Rejected' }}>Rejected</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">Filter</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Bills List -->
+            <div class="card">
+                <div class="card-body">
+                    {% if bills.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Bill Number</th>
+                                    <th>Vendor</th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                    <th>Request</th>
+                                    <th>Status</th>
+                                    <th>Uploaded By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bill in bills.items %}
+                                <tr>
+                                    <td><strong>{{ bill.bill_number }}</strong></td>
+                                    <td>{{ bill.vendor_name }}</td>
+                                    <td>₹{{ "{:,.2f}".format(bill.bill_amount) }}</td>
+                                    <td>{{ bill.bill_date.strftime('%d %b %Y') if bill.bill_date else 'N/A' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('view_requests') }}#request-{{ bill.request_id }}" class="text-decoration-none">
+                                            Request #{{ bill.request_id }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if bill.status == 'Pending' %}
+                                            <span class="badge bg-warning">{{ bill.status }}</span>
+                                        {% elif bill.status == 'Verified' %}
+                                            <span class="badge bg-success">{{ bill.status }}</span>
+                                        {% elif bill.status == 'Rejected' %}
+                                            <span class="badge bg-danger">{{ bill.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ bill.uploader.full_name }}</td>
+                                    <td>
+                                        {% if bill.bill_filename %}
+                                        <a href="{{ url_for('uploaded_file', filename=bill.bill_filename) }}" 
+                                           class="btn btn-sm btn-outline-primary" target="_blank">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if user.role in ['Admin', 'MD'] and bill.status == 'Pending' %}
+                                        <a href="{{ url_for('verify_bill', bill_id=bill.id, action='approve') }}" 
+                                           class="btn btn-sm btn-success" 
+                                           onclick="return confirm('Approve this bill?')">
+                                            <i class="fas fa-check"></i>
+                                        </a>
+                                        <a href="{{ url_for('verify_bill', bill_id=bill.id, action='reject') }}" 
+                                           class="btn btn-sm btn-danger" 
+                                           onclick="return confirm('Reject this bill?')">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if bills.pages > 1 %}
+                    <nav aria-label="Bills pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if bills.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('view_bills', page=bills.prev_num, status=selected_status) }}">Previous</a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in bills.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != bills.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('view_bills', page=page_num, status=selected_status) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if bills.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('view_bills', page=bills.next_num, status=selected_status) }}">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No bills found</h4>
+                        <p class="text-muted">No bills match your current filters.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

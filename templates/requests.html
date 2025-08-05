@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}Requests - Hexamed Asset Management{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-list"></i> Asset Requests</h2>
+                <div>
+                    <a href="{{ url_for('download_requests') }}" class="btn btn-outline-success me-2">
+                        <i class="fas fa-download"></i> Download CSV
+                    </a>
+                    <a href="{{ url_for('create_request') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Request
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if requests.items %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Item Name</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Requester</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in requests.items %}
+                        <tr>
+                            <td><strong>#{{ request.id }}</strong></td>
+                            <td>
+                                <div>
+                                    <strong>{{ request.item_name }}</strong>
+                                    {% if request.estimated_cost %}
+                                        <br><small class="text-muted">₹{{ "%.2f"|format(request.estimated_cost) }}</small>
+                                    {% endif %}
+                                    {% if user.role == 'Accounts/SCM' and request.status in ['Pending', 'Approved'] %}
+                                        {% set matching_assets = [] %}
+                                        {% for asset in assets if asset.name.lower() in request.item_name.lower() or request.item_name.lower() in asset.name.lower() %}
+                                            {% if asset.asset_type == 'Consumable Asset' and asset.current_quantity >= request.quantity %}
+                                                {% set _ = matching_assets.append(asset) %}
+                                            {% elif asset.asset_type == 'Fixed Asset' and asset.status == 'Available' %}
+                                                {% set _ = matching_assets.append(asset) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if matching_assets %}
+                                            <br><small class="text-success"><i class="fas fa-check-circle"></i> Assets Available</small>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ request.request_type }}</span>
+                            </td>
+                            <td>{{ request.quantity }}</td>
+                            <td>
+                                <div>
+                                    {{ request.requester.full_name }}
+                                    <br><small class="text-muted">{{ request.requester.username }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                {% if request.status == 'Pending' %}
+                                    <span class="badge bg-warning">
+                                        {{ request.status }}
+                                        <br><small>Level {{ request.current_approval_level }}</small>
+                                    </span>
+                                {% elif request.status == 'Approved' %}
+                                    <span class="badge bg-success">{{ request.status }}</span>
+                                {% elif request.status == 'Rejected' %}
+                                    <span class="badge bg-danger">{{ request.status }}</span>
+                                {% elif request.status == 'Fulfilled' %}
+                                    <span class="badge bg-success">{{ request.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if request.urgency == 'Critical' %}
+                                    <span class="badge bg-danger">{{ request.urgency }}</span>
+                                {% elif request.urgency == 'High' %}
+                                    <span class="badge bg-warning">{{ request.urgency }}</span>
+                                {% elif request.urgency == 'Normal' %}
+                                    <span class="badge bg-secondary">{{ request.urgency }}</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">{{ request.urgency }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>
+                                    {{ request.created_at.strftime('%m/%d/%Y') if request.created_at else 'N/A' }}
+                                    <br><small class="text-muted">{{ request.created_at.strftime('%H:%M') if request.created_at else 'N/A' }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" 
+                                            data-bs-target="#requestModal{{ request.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+
+                                    {% if request.status == 'Pending' %}
+                                        {% set can_approve = False %}
+                                        {% if user.id != request.user_id %}
+                                            {# MD can approve anything #}
+                                            {% if user.role == 'MD' %}
+                                                {% set can_approve = True %}
+                                            {# Regular users: User → CM (1) → Admin (2) → SCM (3) → MD (4) #}
+                                            {% elif request.requester.role in ['User', 'Employee'] %}
+                                                {% if user.role == 'Concern Manager' and request.current_approval_level == 1 and user.floor == request.floor %}
+                                                    {% set can_approve = True %}
+                                                {% elif user.role == 'Admin' and request.current_approval_level == 2 %}
+                                                    {% set can_approve = True %}
+                                                {% elif user.role == 'Accounts/SCM' and request.current_approval_level == 3 %}
+                                                    {% set can_approve = True %}
+                                                {% endif %}
+                                            {# CM requests: CM → Admin (1) → SCM (2) → MD (3) #}
+                                            {% elif request.requester.role == 'Concern Manager' %}
+                                                {% if user.role == 'Admin' and request.current_approval_level == 1 %}
+                                                    {% set can_approve = True %}
+                                                {% elif user.role == 'Accounts/SCM' and request.current_approval_level == 2 %}
+                                                    {% set can_approve = True %}
+                                                {% endif %}
+                                            {# Admin requests: Admin → SCM (1) → MD (2) #}
+                                            {% elif request.requester.role == 'Admin' %}
+                                                {% if user.role == 'Accounts/SCM' and request.current_approval_level == 1 %}
+                                                    {% set can_approve = True %}
+                                                {% endif %}
+                                            {# SCM requests: SCM → Admin (1) → MD (2) #}
+                                            {% elif request.requester.role == 'Accounts/SCM' %}
+                                                {% if user.role == 'Admin' and request.current_approval_level == 1 %}
+                                                    {% set can_approve = True %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if can_approve %}
+                                            <a href="{{ url_for('approve_request', request_id=request.id, action='Approved') }}" 
+                                               class="btn btn-outline-success btn-sm" 
+                                               onclick="return confirm('Approve this request?')">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                            <a href="{{ url_for('approve_request', request_id=request.id, action='Rejected') }}" 
+                                               class="btn btn-outline-danger btn-sm"
+                                               onclick="return confirm('Reject this request?')">
+                                                <i class="fas fa-times"></i>
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+
+                                    {% if user.role in ['Accounts/SCM', 'Admin', 'MD'] %}
+                                        {% if request.status in ['Pending', 'Approved'] %}
+                                            <a href="{{ url_for('edit_request', request_id=request.id) }}" 
+                                               class="btn btn-outline-secondary btn-sm"
+                                               title="Edit Request">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('assign_from_asset', request_id=request.id) }}" 
+                                               class="btn btn-outline-success btn-sm"
+                                               title="Assign from Asset">
+                                                <i class="fas fa-box"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if request.status == 'Approved' and user.role == 'Accounts/SCM' %}
+                                            <a href="{{ url_for('fulfill_request', request_id=request.id) }}" 
+                                               class="btn btn-outline-warning btn-sm"
+                                               title="Fulfill from Assets">
+                                                <i class="fas fa-hand-holding-box"></i>
+                                            </a>
+                                            <a href="{{ url_for('upload_bill', request_id=request.id) }}" 
+                                               class="btn btn-outline-primary btn-sm"
+                                               title="Upload Bill">
+                                                <i class="fas fa-receipt"></i>
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if requests.pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if requests.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('view_requests', page=requests.prev_num) }}">Previous</a>
+                </li>
+            {% endif %}
+
+            {% for page_num in requests.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != requests.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('view_requests', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                    {% endif %}
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if requests.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('view_requests', page=requests.next_num) }}">Next</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-inbox fa-4x text-muted mb-4"></i>
+            <h4>No Requests Found</h4>
+            <p class="text-muted">There are no asset requests to display.</p>
+            <a href="{{ url_for('create_request') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create First Request
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Request Detail Modals -->
+{% for request in requests.items %}
+<div class="modal fade" id="requestModal{{ request.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Request #{{ request.id }} - {{ request.item_name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Item Name:</strong> {{ request.item_name }}<br>
+                        <strong>Quantity:</strong> {{ request.quantity }}<br>
+                        <strong>Type:</strong> {{ request.request_type }}<br>
+                        <strong>Urgency:</strong> {{ request.urgency }}<br>
+                        {% if request.estimated_cost %}
+                        <strong>Estimated Cost:</strong> ₹{{ "%.2f"|format(request.estimated_cost) }}<br>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Requester:</strong> {{ request.requester.full_name }}<br>
+                        <strong>Status:</strong> {{ request.status }}<br>
+                        <strong>Current Level:</strong> {{ request.current_approval_level }}<br>
+                        <strong>Created:</strong> {{ request.created_at.strftime('%m/%d/%Y %H:%M') if request.created_at else 'N/A' }}<br>
+                        <strong>Updated:</strong> {{ request.updated_at.strftime('%m/%d/%Y %H:%M') if request.updated_at else 'N/A' }}<br>
+                    </div>
+                </div>
+
+                {% if request.status == 'Fulfilled' and request.fulfilled_from_asset %}
+                <hr>
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>Fulfillment Details</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Fulfilled From:</strong> {{ request.fulfilled_from_asset.asset_tag }} - {{ request.fulfilled_from_asset.name }}<br>
+                            <strong>Quantity Fulfilled:</strong> {{ request.fulfilled_quantity }}<br>
+                            <strong>Fulfilled By:</strong> {{ request.fulfilled_by_user.full_name }}<br>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Fulfilled Date:</strong> {{ request.fulfilled_at.strftime('%m/%d/%Y %H:%M') if request.fulfilled_at else 'N/A' }}<br>
+                            {% if request.fulfillment_notes %}
+                            <strong>Notes:</strong> {{ request.fulfillment_notes }}<br>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <hr>
+                <strong>Purpose/Justification:</strong>
+                <p>{{ request.purpose }}</p>
+
+                {% if request.uploaded_files %}
+                <hr>
+                <strong>Attached Files:</strong>
+                <ul class="list-unstyled">
+                    {% for file in request.uploaded_files %}
+                    <li>
+                        <a href="{{ url_for('uploaded_file', filename=file.filename) }}" target="_blank">
+                            <i class="fas fa-file"></i> {{ file.original_filename }}
+                        </a>
+                        <small class="text-muted">({{ "%.1f"|format(file.file_size / 1024) }} KB)</small>
+                    </li>
+                    {% endfor %}
+
+
+                </ul>
+
+                {% endif %}
+
+
+
+                {% if request.approvals %}
+                <hr>
+                <strong>Approval History:</strong>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Level</th>
+                                <th>Approver</th>
+                                <th>Action</th>
+                                <th>Date</th>
+                                <th>Comments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for approval in request.approvals %}
+                            <tr>
+                                <td>{{ approval.approval_level }}</td>
+                                <td>{{ approval.approver.full_name }}</td>
+                                <td>
+                                    {% if approval.action == 'Approved' %}
+                                        <span class="badge bg-success">{{ approval.action }}</span>
+                                    {% elif approval.action == 'Rejected' %}
+                                        <span class="badge bg-danger">{{ approval.action }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ approval.action }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ approval.approved_at.strftime('%m/%d/%Y %H:%M') if approval.approved_at else 'N/A' }}</td>
+                                <td>{{ approval.comments or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

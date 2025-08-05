@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Activity Log - Hexamed Asset Management{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-history"></i> Activity Log</h2>
+                    <p class="text-muted">System audit trail and user activity</p>
+                </div>
+                {% if user.role in ['Admin', 'MD', 'Accounts/SCM'] %}
+                <div>
+                    <a href="{{ url_for('download_recent_activity') }}" class="btn btn-success">
+                        <i class="fas fa-file-excel me-1"></i>Download Activity Report
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    {% if activities.items %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Description</th>
+                            <th>Request ID</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activity in activities.items %}
+                        <tr>
+                            <td>
+                                <div>
+                                    {{ activity.timestamp.strftime('%m/%d/%Y') }}
+                                    <br><small class="text-muted">{{ activity.timestamp.strftime('%H:%M:%S') }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ activity.user.full_name }}</strong>
+                                    <br><small class="text-muted">{{ activity.user.username }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                {% if 'Login' in activity.action %}
+                                    <span class="badge bg-success">{{ activity.action }}</span>
+                                {% elif 'Logout' in activity.action %}
+                                    <span class="badge bg-secondary">{{ activity.action }}</span>
+                                {% elif 'Created' in activity.action %}
+                                    <span class="badge bg-primary">{{ activity.action }}</span>
+                                {% elif 'Approved' in activity.action %}
+                                    <span class="badge bg-success">{{ activity.action }}</span>
+                                {% elif 'Rejected' in activity.action %}
+                                    <span class="badge bg-danger">{{ activity.action }}</span>
+                                {% elif 'Hold' in activity.action %}
+                                    <span class="badge bg-warning">{{ activity.action }}</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ activity.action }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ activity.description }}</td>
+                            <td>
+                                {% if activity.request_id %}
+                                    <a href="{{ url_for('view_requests') }}" class="text-decoration-none">
+                                        #{{ activity.request_id }}
+                                    </a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ activity.ip_address or '-' }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if activities.pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if activities.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('activity_log', page=activities.prev_num) }}">Previous</a>
+                </li>
+            {% endif %}
+            
+            {% for page_num in activities.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != activities.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('activity_log', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                    {% endif %}
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if activities.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('activity_log', page=activities.next_num) }}">Next</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-history fa-4x text-muted mb-4"></i>
+            <h4>No Activity Found</h4>
+            <p class="text-muted">No system activity has been recorded yet.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

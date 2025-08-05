@@ -1,0 +1,121 @@
+
+{% extends "base.html" %}
+
+{% block title %}Add Quotation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Add New Quotation</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quotation_number" class="form-label">Quotation Number *</label>
+                                    <input type="text" class="form-control" id="quotation_number" name="quotation_number" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="vendor_id" class="form-label">Vendor *</label>
+                                    <select class="form-control" id="vendor_id" name="vendor_id" required>
+                                        <option value="">Select Vendor</option>
+                                        {% for vendor in vendors %}
+                                        <option value="{{ vendor.id }}">{{ vendor.vendor_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="request_id" class="form-label">Related Request (Optional)</label>
+                                    <select class="form-control" id="request_id" name="request_id">
+                                        <option value="">Select Request</option>
+                                        {% for req in requests %}
+                                        <option value="{{ req.id }}">#{{{ req.id }} - {{ req.item_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quoted_quantity" class="form-label">Quantity *</label>
+                                    <input type="number" class="form-control" id="quoted_quantity" name="quoted_quantity" min="1" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quoted_price" class="form-label">Unit Price (₹) *</label>
+                                    <input type="number" class="form-control" id="quoted_price" name="quoted_price" step="0.01" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="additional_costs" class="form-label">Additional Costs (₹)</label>
+                                    <input type="number" class="form-control" id="additional_costs" name="additional_costs" step="0.01" min="0" value="0">
+                                    <small class="form-text text-muted">Shipping, taxes, etc.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="delivery_timeline" class="form-label">Delivery Timeline</label>
+                                    <input type="text" class="form-control" id="delivery_timeline" name="delivery_timeline" placeholder="e.g., 7-10 business days">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="validity_period" class="form-label">Validity (Days)</label>
+                                    <input type="number" class="form-control" id="validity_period" name="validity_period" value="30" min="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="payment_terms" class="form-label">Payment Terms</label>
+                                    <input type="text" class="form-control" id="payment_terms" name="payment_terms" placeholder="e.g., Net 30">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="warranty_period" class="form-label">Warranty Period</label>
+                                    <input type="text" class="form-control" id="warranty_period" name="warranty_period" placeholder="e.g., 1 year">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="specifications" class="form-label">Specifications</label>
+                            <textarea class="form-control" id="specifications" name="specifications" rows="3"></textarea>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Add Quotation
+                            </button>
+                            <a href="{{ url_for('view_quotations') }}" class="btn btn-secondary ms-2">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

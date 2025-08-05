@@ -1,0 +1,82 @@
+
+{% extends "base.html" %}
+
+{% block title %}Bulk Upload Vendors - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-upload me-2"></i>Bulk Upload Vendors
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Upload Instructions</h6>
+                        <ul class="mb-0">
+                            <li>Upload a CSV or Excel file with vendor data</li>
+                            <li>Required column: <code>vendor_name</code></li>
+                            <li>Optional columns: <code>vendor_code</code>, <code>category</code>, <code>contact_person</code>, <code>phone</code>, <code>email</code>, <code>address</code>, <code>payment_terms</code>, <code>notes</code></li>
+                            <li>Vendor codes must be unique if provided</li>
+                        </ul>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="bulk_file" class="form-label">Select File *</label>
+                            <input type="file" class="form-control" id="bulk_file" name="bulk_file" 
+                                   accept=".csv,.xlsx,.xls" required>
+                            <div class="form-text">Supported formats: CSV, Excel (.xlsx, .xls)</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_vendors') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Vendors
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Upload Vendors
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Sample CSV Format:</h6>
+                            <pre class="bg-light p-3 small">vendor_name,vendor_code,category,contact_person,phone,email,address,payment_terms
+ABC Office Supplies,VEN001,Office Supplies,John Doe,9876543210,john@abc.com,"123 Main St, City",Net 30
+XYZ IT Solutions,VEN002,IT Equipment,Jane Smith,9876543211,jane@xyz.com,"456 Tech Ave, City",Net 15
+Dell India,VEN003,IT Equipment,Support Team,1800-425-3355,support@dell.com,"Dell Campus, Bangalore",Net 45</pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Category Examples:</h6>
+                            <ul class="small">
+                                <li>IT Equipment</li>
+                                <li>Office Supplies</li>
+                                <li>Furniture</li>
+                                <li>Stationery</li>
+                                <li>Medical Equipment</li>
+                                <li>Construction</li>
+                                <li>Services</li>
+                            </ul>
+                            
+                            <h6>Payment Terms Examples:</h6>
+                            <ul class="small">
+                                <li>Net 30</li>
+                                <li>Net 15</li>
+                                <li>Net 45</li>
+                                <li>COD</li>
+                                <li>Advance Payment</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

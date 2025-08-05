@@ -1,0 +1,59 @@
+
+{% extends "base.html" %}
+
+{% block title %}Custom Reports - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="text-primary">
+                <i class="fas fa-file-alt me-2"></i>Custom Reports
+            </h2>
+            <p class="text-muted">Generate custom reports for your asset management system</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Asset Reports</h5>
+                </div>
+                <div class="card-body">
+                    <p>Generate comprehensive asset reports</p>
+                    <a href="{{ url_for('download_assets') }}" class="btn btn-primary">
+                        <i class="fas fa-download me-1"></i>Download Assets
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Request Reports</h5>
+                </div>
+                <div class="card-body">
+                    <p>Generate request and approval reports</p>
+                    <a href="{{ url_for('download_requests') }}" class="btn btn-primary">
+                        <i class="fas fa-download me-1"></i>Download Requests
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">System Reports</h5>
+                </div>
+                <div class="card-body">
+                    <p>Comprehensive system activity reports</p>
+                    <a href="{{ url_for('download_recent_activity') }}" class="btn btn-primary">
+                        <i class="fas fa-download me-1"></i>Download System Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

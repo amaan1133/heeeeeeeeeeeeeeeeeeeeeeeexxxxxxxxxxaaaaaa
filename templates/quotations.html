@@ -1,0 +1,249 @@
+
+{% extends "base.html" %}
+
+{% block title %}Quotations - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="text-primary">
+                <i class="fas fa-file-invoice-dollar me-2"></i>Quotation Management
+            </h2>
+            <p class="text-muted">Request: {{ request.item_name }} ({{ request.quantity }} units)</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('add_quotation', request_id=request.id) }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Add Quotation
+            </a>
+        </div>
+    </div>
+
+    <!-- Request Details -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Request Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Item:</strong> {{ request.item_name }}
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Quantity:</strong> {{ request.quantity }}
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Estimated Cost:</strong> ₹{{ "{:,.0f}".format(request.estimated_cost or 0) }}
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Urgency:</strong> 
+                            <span class="badge bg-{{ 'danger' if request.urgency == 'High' else 'warning' if request.urgency == 'Normal' else 'info' }}">
+                                {{ request.urgency }}
+                            </span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Requester:</strong> {{ request.requester.full_name }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparison Statistics -->
+    {% if comparison_stats %}
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Price Comparison</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h4 class="text-success">₹{{ "{:,.0f}".format(comparison_stats.min_price) }}</h4>
+                            <p class="text-muted">Lowest Quote</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-danger">₹{{ "{:,.0f}".format(comparison_stats.max_price) }}</h4>
+                            <p class="text-muted">Highest Quote</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-primary">₹{{ "{:,.0f}".format(comparison_stats.avg_price) }}</h4>
+                            <p class="text-muted">Average Price</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-warning">₹{{ "{:,.0f}".format(comparison_stats.price_variance) }}</h4>
+                            <p class="text-muted">Price Variance</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quotations List -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quotations ({{ quotations|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if quotations %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Quotation #</th>
+                                    <th>Vendor</th>
+                                    <th>Unit Price</th>
+                                    <th>Total Cost</th>
+                                    <th>Delivery</th>
+                                    <th>Warranty</th>
+                                    <th>Score</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for quotation in quotations %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ quotation.quotation_number }}</strong>
+                                        <br><small class="text-muted">{{ quotation.created_at.strftime('%Y-%m-%d') }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ quotation.vendor.vendor_name }}</strong>
+                                        {% if quotation.vendor.contact_person %}
+                                        <br><small class="text-muted">{{ quotation.vendor.contact_person }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>₹{{ "{:,.2f}".format(quotation.cost_per_unit) }}</td>
+                                    <td>
+                                        <strong>₹{{ "{:,.2f}".format(quotation.total_cost) }}</strong>
+                                        {% if quotation.additional_costs > 0 %}
+                                        <br><small class="text-muted">+₹{{ "{:,.2f}".format(quotation.additional_costs) }} additional</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ quotation.delivery_timeline or 'Not specified' }}</td>
+                                    <td>{{ quotation.warranty_period or 'Not specified' }}</td>
+                                    <td>
+                                        {% if quotation.evaluation_score %}
+                                        <span class="badge bg-{{ 'success' if quotation.evaluation_score >= 80 else 'warning' if quotation.evaluation_score >= 60 else 'danger' }}">
+                                            {{ quotation.evaluation_score }}/100
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">Not evaluated</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if quotation.status == 'Pending' %}
+                                        <span class="badge bg-warning">{{ quotation.status }}</span>
+                                        {% elif quotation.status == 'Approved' %}
+                                        <span class="badge bg-success">{{ quotation.status }}</span>
+                                        {% elif quotation.status == 'Rejected' %}
+                                        <span class="badge bg-danger">{{ quotation.status }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ quotation.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.role in ['Admin', 'MD'] and quotation.status == 'Pending' %}
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" 
+                                                data-bs-target="#evaluateModal" 
+                                                data-quotation-id="{{ quotation.id }}"
+                                                data-quotation-number="{{ quotation.quotation_number }}">
+                                            <i class="fas fa-star"></i> Evaluate
+                                        </button>
+                                        {% endif %}
+                                        {% if quotation.quotation_filename %}
+                                        <a href="{{ url_for('download_file', filename=quotation.quotation_filename) }}" 
+                                           class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No quotations received yet</h5>
+                        <p class="text-muted">Start by adding quotations from different vendors</p>
+                        <a href="{{ url_for('add_quotation', request_id=request.id) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Add First Quotation
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Evaluate Quotation Modal -->
+<div class="modal fade" id="evaluateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Evaluate Quotation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="evaluateForm" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="evaluation_score" class="form-label">Evaluation Score (0-100)</label>
+                        <input type="number" class="form-control" id="evaluation_score" name="evaluation_score" 
+                               min="0" max="100" required>
+                        <div class="form-text">
+                            Consider: Price competitiveness, vendor reputation, delivery timeline, warranty terms
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Decision</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="">Select Decision</option>
+                            <option value="Approved">Approve</option>
+                            <option value="Rejected">Reject</option>
+                            <option value="Pending">Keep Pending</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="evaluation_notes" class="form-label">Evaluation Notes</label>
+                        <textarea class="form-control" id="evaluation_notes" name="evaluation_notes" rows="3" 
+                                  placeholder="Provide detailed evaluation comments"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Evaluation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const evaluateModal = document.getElementById('evaluateModal');
+    evaluateModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const quotationId = button.getAttribute('data-quotation-id');
+        const quotationNumber = button.getAttribute('data-quotation-number');
+        
+        const form = document.getElementById('evaluateForm');
+        form.action = `/quotation/${quotationId}/evaluate`;
+        
+        const modalTitle = evaluateModal.querySelector('.modal-title');
+        modalTitle.textContent = `Evaluate Quotation: ${quotationNumber}`;
+    });
+});
+</script>
+{% endblock %}

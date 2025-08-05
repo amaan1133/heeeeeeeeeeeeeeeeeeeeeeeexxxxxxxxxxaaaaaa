@@ -1,0 +1,95 @@
+
+{% extends "base.html" %}
+
+{% block title %}Upload Bill - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-upload me-2"></i>Upload Bill
+                    </h4>
+                    <small class="text-muted">Upload bills for approved requests</small>
+                </div>
+                <div class="card-body">
+                    {% if requests %}
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="request_id" class="form-label">Select Approved Request *</label>
+                                <select class="form-select" id="request_id" name="request_id" required>
+                                    <option value="">Choose a request...</option>
+                                    {% for req in requests %}
+                                    <option value="{{ req.id }}">
+                                        #{{ req.id }} - {{ req.item_name }} ({{ req.requester.full_name }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="bill_number" class="form-label">Bill Number *</label>
+                                <input type="text" class="form-control" id="bill_number" name="bill_number" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="vendor_name" class="form-label">Vendor Name *</label>
+                                <input type="text" class="form-control" id="vendor_name" name="vendor_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="bill_amount" class="form-label">Bill Amount *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="bill_amount" name="bill_amount" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="bill_date" class="form-label">Bill Date *</label>
+                                <input type="date" class="form-control" id="bill_date" name="bill_date" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="bill_file" class="form-label">Upload Bill File *</label>
+                                <input type="file" class="form-control" id="bill_file" name="bill_file" 
+                                       accept=".pdf,.jpg,.jpeg,.png" required>
+                                <div class="form-text">Accepted formats: PDF, JPG, JPEG, PNG (Max 16MB)</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="Additional notes about the bill..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_bills') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Bills
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Upload Bill
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-4x text-muted mb-4"></i>
+                        <h4>No Approved Requests Available</h4>
+                        <p class="text-muted">There are no approved requests without bills to upload.</p>
+                        <a href="{{ url_for('view_bills') }}" class="btn btn-primary">
+                            <i class="fas fa-receipt"></i> View Existing Bills
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

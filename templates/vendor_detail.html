@@ -1,0 +1,182 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ vendor.vendor_name }} - Vendor Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="text-primary">
+                <i class="fas fa-truck me-2"></i>{{ vendor.vendor_name }}
+            </h2>
+            <p class="text-muted">Vendor information and assignment history</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('view_vendors') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Vendors
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Vendor Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Vendor Code:</strong></td>
+                            <td>{{ vendor.vendor_code or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Category:</strong></td>
+                            <td>
+                                {% if vendor.category %}
+                                <span class="badge bg-secondary">{{ vendor.category }}</span>
+                                {% else %}N/A{% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Contact Person:</strong></td>
+                            <td>{{ vendor.contact_person or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Phone:</strong></td>
+                            <td>
+                                {% if vendor.phone %}
+                                <i class="fas fa-phone text-primary me-1"></i>{{ vendor.phone }}
+                                {% else %}N/A{% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Email:</strong></td>
+                            <td>
+                                {% if vendor.email %}
+                                <i class="fas fa-envelope text-primary me-1"></i>{{ vendor.email }}
+                                {% else %}N/A{% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Payment Terms:</strong></td>
+                            <td>{{ vendor.payment_terms or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                {% if vendor.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Created:</strong></td>
+                            <td>{{ vendor.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                    </table>
+
+                    {% if vendor.address %}
+                    <div class="mt-3">
+                        <h6><i class="fas fa-map-marker-alt me-2"></i>Address</h6>
+                        <p class="text-muted">{{ vendor.address }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if vendor.notes %}
+                    <div class="mt-3">
+                        <h6><i class="fas fa-sticky-note me-2"></i>Notes</h6>
+                        <p class="text-muted">{{ vendor.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Assignment History
+                        <span class="badge bg-primary ms-2">{{ assignments|length }} assignments</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if assignments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Assignment #</th>
+                                    <th>Item</th>
+                                    <th>Assigned To</th>
+                                    <th>Quantity</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in assignments %}
+                                <tr>
+                                    <td>
+                                        <strong>#{{ assignment.id }}</strong>
+                                        <br><small class="text-muted">Req #{{ assignment.request_id }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ assignment.request.item_name }}</strong>
+                                        <br><small class="text-muted">{{ assignment.request.request_type }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ assignment.assignee.full_name }}</strong>
+                                        <br><small class="text-muted">{{ assignment.assignee.department }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ assignment.quantity_assigned }}</span>
+                                    </td>
+                                    <td>
+                                        {% if assignment.total_amount %}
+                                        <strong>₹{{ "%.2f"|format(assignment.total_amount) }}</strong>
+                                        {% else %}
+                                        <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if assignment.delivery_status == 'Pending' %}
+                                        <span class="badge bg-warning">{{ assignment.delivery_status }}</span>
+                                        {% elif assignment.delivery_status == 'In Transit' %}
+                                        <span class="badge bg-info">{{ assignment.delivery_status }}</span>
+                                        {% elif assignment.delivery_status == 'Delivered' %}
+                                        <span class="badge bg-success">{{ assignment.delivery_status }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ assignment.delivery_status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ assignment.created_at.strftime('%Y-%m-%d') }}
+                                        </small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No assignments yet</h5>
+                        <p class="text-muted">Assignment history will appear here once items are assigned through this vendor.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

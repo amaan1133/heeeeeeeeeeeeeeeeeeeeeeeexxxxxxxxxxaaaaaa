@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hexamed Asset Management{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    {% if session.user_id %}
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-building"></i> Hexamed
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('create_request') }}">
+                            <i class="fas fa-plus-circle"></i> New Request
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view_requests') }}">
+                            <i class="fas fa-list"></i> Requests
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view_assets') }}">
+                            <i class="fas fa-boxes"></i> Assets
+                        </a>
+                    </li>
+                    {% if session.role in ['Admin', 'MD', 'Accounts/SCM'] %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view_vendors') }}">
+                            <i class="fas fa-truck"></i> Vendors
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.role in ['Admin', 'MD', 'Accounts/SCM'] %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_assignments') }}">
+                                <i class="fas fa-tasks"></i> Item Assignments
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_asset_assignments') }}">
+                                <i class="fas fa-exchange-alt"></i> Asset Assignments
+                            </a>
+                        </li>
+                        {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('activity_log') }}">
+                            <i class="fas fa-history"></i> Activity
+                        </a>
+                    </li>
+                    {% if session.role in ['Admin', 'MD', 'Accounts/SCM'] %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_bills') }}">
+                                <i class="fas fa-file-invoice-dollar"></i> Bills
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if session.role == 'Accounts/SCM' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('scm_upload_bill') }}">
+                                <i class="fas fa-upload"></i> Upload Bill
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% if session.role in ['Admin', 'MD'] %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_panel') }}">
+                            <i class="fas fa-cog"></i> Admin
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('asset_lifecycle_dashboard') }}">
+                            <i class="fas fa-sync-alt"></i> Lifecycle
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('analytics_dashboard') }}">
+                            <i class="fas fa-chart-bar"></i> Analytics
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Global Search in Navbar -->
+                <div class="navbar-nav me-3 d-none d-lg-block">
+                    <div class="nav-item search-container position-relative">
+                        <div class="input-group" style="width: 250px;">
+                            <input type="text" class="form-control form-control-sm" id="navSearch" 
+                                   placeholder="Quick search..." autocomplete="off">
+                            <button class="btn btn-outline-light btn-sm" type="button" id="navSearchButton">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div id="navSearchResults" class="search-results position-absolute bg-white border rounded shadow-lg" style="top: 100%; right: 0; z-index: 1000; display: none; max-height: 400px; overflow-y: auto; width: 300px;"></div>
+                    </div>
+                </div>
+
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> {{ session.full_name }}
+                            <span class="badge bg-secondary">{{ session.role }}</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><h6 class="dropdown-header">{{ session.full_name }}</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}
+            {% if error %}
+                <div class="container mt-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                                    <h4>{{ error }}</h4>
+                                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light text-dark mt-5 py-4 border-top">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-building"></i> Hexamed Asset Management</h6>
+                    <p class="mb-0">Streamlining asset and procurement processes</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <small>&copy; 2024 Hexamed. All rights reserved.</small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Global Search JavaScript for Navbar -->
+    <script>
+    if (document.getElementById('navSearch')) {
+        let navSearchTimeout;
+        const navSearchInput = document.getElementById('navSearch');
+        const navSearchResults = document.getElementById('navSearchResults');
+        const navSearchButton = document.getElementById('navSearchButton');
+
+        function performNavSearch() {
+            const query = navSearchInput.value.trim();
+
+            if (query.length < 2) {
+                navSearchResults.style.display = 'none';
+                return;
+            }
+
+            fetch(`/api/search?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayNavSearchResults(data.results);
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    navSearchResults.innerHTML = '<div class="p-3 text-danger">Search error occurred</div>';
+                    navSearchResults.style.display = 'block';
+                });
+        }
+
+        function displayNavSearchResults(results) {
+            if (results.length === 0) {
+                navSearchResults.innerHTML = '<div class="p-3 text-muted">No results found</div>';
+                navSearchResults.style.display = 'block';
+                return;
+            }
+
+            let html = '<div class="list-group list-group-flush">';
+
+            results.slice(0, 8).forEach(result => {
+                let statusBadge = '';
+                let badgeClass = 'secondary';
+
+                if (result.status) {
+                    switch(result.status.toLowerCase()) {
+                        case 'pending': badgeClass = 'warning'; break;
+                        case 'approved': badgeClass = 'success'; break;
+                        case 'rejected': badgeClass = 'danger'; break;
+                        case 'available': badgeClass = 'success'; break;
+                        case 'in use': badgeClass = 'primary'; break;
+                        case 'maintenance': badgeClass = 'warning'; break;
+                        case 'active': badgeClass = 'success'; break;
+                        case 'inactive': badgeClass = 'secondary'; break;
+                    }
+                    statusBadge = `<span class="badge bg-${badgeClass} ms-2">${result.status}</span>`;
+                }
+
+                html += `
+                    <a href="${result.url}" class="list-group-item list-group-item-action border-0 py-2">
+                        <div class="d-flex align-items-center">
+                            <div class="me-2 text-primary">
+                                <i class="${result.icon}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 small">${result.title}${statusBadge}</h6>
+                                    <small class="text-muted text-uppercase">${result.type}</small>
+                                </div>
+                                <small class="text-muted">${result.subtitle}</small>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            });
+
+            html += '</div>';
+            navSearchResults.innerHTML = html;
+            navSearchResults.style.display = 'block';
+        }
+
+        // Event listeners for navbar search
+        navSearchInput.addEventListener('input', function() {
+            clearTimeout(navSearchTimeout);
+            navSearchTimeout = setTimeout(performNavSearch, 300);
+        });
+
+        navSearchInput.addEventListener('focus', function() {
+            if (this.value.trim().length >= 2) {
+                performNavSearch();
+            }
+        });
+
+        navSearchButton.addEventListener('click', performNavSearch);
+
+        navSearchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                performNavSearch();
+            }
+        });
+
+        // Hide navbar search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#navSearch') && !e.target.closest('#navSearchResults')) {
+                navSearchResults.style.display = 'none';
+            }
+        });
+    }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

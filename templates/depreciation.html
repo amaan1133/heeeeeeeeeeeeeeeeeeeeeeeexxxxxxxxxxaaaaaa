@@ -1,0 +1,63 @@
+
+{% extends "base.html" %}
+
+{% block title %}Asset Depreciation - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="text-primary">
+                <i class="fas fa-chart-line me-2"></i>Asset Depreciation
+            </h2>
+            <p class="text-muted">Track asset depreciation and book values</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Depreciation Records</h5>
+                </div>
+                <div class="card-body">
+                    {% if depreciation_records %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Asset Tag</th>
+                                    <th>Asset Name</th>
+                                    <th>Method</th>
+                                    <th>Book Value</th>
+                                    <th>Annual Depreciation</th>
+                                    <th>Accumulated</th>
+                                    <th>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in depreciation_records %}
+                                <tr>
+                                    <td><strong>{{ record.asset.asset_tag }}</strong></td>
+                                    <td>{{ record.asset.name }}</td>
+                                    <td><span class="badge bg-info">{{ record.depreciation_method }}</span></td>
+                                    <td>₹{{ "{:,.2f}".format(record.book_value) }}</td>
+                                    <td>₹{{ "{:,.2f}".format(record.annual_depreciation) }}</td>
+                                    <td>₹{{ "{:,.2f}".format(record.accumulated_depreciation) }}</td>
+                                    <td>{{ record.last_calculated_date.strftime('%Y-%m-%d') if record.last_calculated_date else 'Never' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>No depreciation records found.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

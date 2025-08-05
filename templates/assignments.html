@@ -1,0 +1,402 @@
+
+{% extends "base.html" %}
+
+{% block title %}Item Assignments - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="text-primary">
+                <i class="fas fa-tasks me-2"></i>Item Assignments
+            </h2>
+            <p class="text-muted">Track and manage item assignments and deliveries</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="vendor_id" class="form-label">Vendor</label>
+                    <select class="form-select" id="vendor_id" name="vendor_id">
+                        <option value="">All Vendors</option>
+                        {% for vendor in vendors %}
+                        <option value="{{ vendor.id }}" {% if selected_vendor_id == vendor.id|string %}selected{% endif %}>
+                            {{ vendor.vendor_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Delivery Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="In Transit" {% if selected_status == 'In Transit' %}selected{% endif %}>In Transit</option>
+                        <option value="Delivered" {% if selected_status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-outline-primary" style="margin-top: 32px;">
+                            <i class="fas fa-filter me-1"></i>Filter
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-grid">
+                        {% if user.role in ['Admin', 'MD', 'Accounts/SCM'] %}
+                        <a href="{{ url_for('add_assignment') }}" class="btn btn-primary" style="margin-top: 32px;">
+                            <i class="fas fa-plus me-1"></i>New Assignment
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if assignments.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item Details</th>
+                            <th>Assigned To</th>
+                            <th>Vendor</th>
+                            <th>Amount</th>
+                            <th>Delivery</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in assignments.items %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>{{ assignment.item_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">Qty: {{ assignment.quantity }}</small>
+                                    {% if assignment.unit_price %}
+                                    <br>
+                                    <small class="text-muted">Unit: ₹{{ "%.2f"|format(assignment.unit_price) }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ assignment.assignee.full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ assignment.assignee.department }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ assignment.assignee.floor }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <strong>{{ assignment.vendor.vendor_name }}</strong>
+                                {% if assignment.vendor.contact_person %}
+                                <br>
+                                <small class="text-muted">{{ assignment.vendor.contact_person }}</small>
+                                {% endif %}
+                                {% if assignment.vendor.phone %}
+                                <br>
+                                <small class="text-muted">{{ assignment.vendor.phone }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if assignment.total_amount %}
+                                <strong class="text-success">₹{{ "%.2f"|format(assignment.total_amount) }}</strong>
+                                {% else %}
+                                <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if assignment.expected_delivery_date %}
+                                <div>
+                                    <small class="text-muted">Expected:</small>
+                                    <br>
+                                    {{ assignment.expected_delivery_date.strftime('%d %b %Y') }}
+                                </div>
+                                {% endif %}
+                                {% if assignment.actual_delivery_date %}
+                                <div class="mt-1">
+                                    <small class="text-muted">Delivered:</small>
+                                    <br>
+                                    <strong>{{ assignment.actual_delivery_date.strftime('%d %b %Y') }}</strong>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if assignment.delivery_status == 'Pending' %}
+                                <span class="badge bg-warning">{{ assignment.delivery_status }}</span>
+                                {% elif assignment.delivery_status == 'In Transit' %}
+                                <span class="badge bg-info">{{ assignment.delivery_status }}</span>
+                                {% elif assignment.delivery_status == 'Delivered' %}
+                                <span class="badge bg-success">{{ assignment.delivery_status }}</span>
+                                {% endif %}
+                                <br>
+                                <small class="text-muted">{{ assignment.created_at.strftime('%d %b %Y') }}</small>
+                            </td>
+                            <td>
+                                {% if user.role in ['Admin', 'MD', 'Accounts/SCM'] and assignment.delivery_status != 'Delivered' %}
+                                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#deliverModal{{ assignment.id }}">
+                                    <i class="fas fa-check"></i> Mark Delivered
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if assignments.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if assignments.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('view_assignments', page=assignments.prev_num, status=selected_status, vendor_id=selected_vendor_id) }}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in assignments.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != assignments.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('view_assignments', page=page_num, status=selected_status, vendor_id=selected_vendor_id) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if assignments.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('view_assignments', page=assignments.next_num, status=selected_status, vendor_id=selected_vendor_id) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No assignments found</h5>
+                <p class="text-muted">No item assignments match your current filters.</p>
+                {% if user.role in ['Admin', 'MD', 'Accounts/SCM'] %}
+                <a href="{{ url_for('add_assignment') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create First Assignment
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delivery Modals -->
+{% for assignment in assignments.items %}
+{% if user.role in ['Admin', 'MD', 'Accounts/SCM'] and assignment.delivery_status != 'Delivered' %}
+<div class="modal fade" id="deliverModal{{ assignment.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mark Assignment as Delivered</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('deliver_assignment', assignment_id=assignment.id) }}">
+                <div class="modal-body">
+                    <p><strong>Item:</strong> {{ assignment.item_name }}</p>
+                    <p><strong>Assigned to:</strong> {{ assignment.assignee.full_name }}</p>
+                    <p><strong>Vendor:</strong> {{ assignment.vendor.vendor_name }}</p>
+                    
+                    <div class="mb-3">
+                        <label for="delivery_notes{{ assignment.id }}" class="form-label">Delivery Notes</label>
+                        <textarea class="form-control" id="delivery_notes{{ assignment.id }}" name="delivery_notes" rows="3" placeholder="Any notes about the delivery..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i>Mark as Delivered
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Delivery Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="In Transit" {% if selected_status == 'In Transit' %}selected{% endif %}>In Transit</option>
+                        <option value="Delivered" {% if selected_status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-filter me-1"></i>Filter
+                    </button>
+                    <a href="{{ url_for('view_assignments') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assignments Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Assignment List
+                <span class="badge bg-primary ms-2">{{ assignments.total }} assignments</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if assignments.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Assignment #</th>
+                            <th>Request Item</th>
+                            <th>Assigned To</th>
+                            <th>Vendor</th>
+                            <th>Quantity</th>
+                            <th>Amount</th>
+                            <th>Delivery Status</th>
+                            <th>Date</th>
+                            {% if user.role in ['Admin', 'MD', 'Accounts/SCM'] %}
+                            <th>Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in assignments.items %}
+                        <tr>
+                            <td>
+                                <strong>#{{ assignment.id }}</strong>
+                            </td>
+                            <td>
+                                <strong>{{ assignment.item_name }}</strong>
+                                <br><small class="text-muted">Direct Assignment</small>
+                            </td>
+                            <td>
+                                <strong>{{ assignment.assignee.full_name }}</strong>
+                                <br><small class="text-muted">{{ assignment.assignee.department }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ assignment.vendor.vendor_name }}</strong>
+                                {% if assignment.vendor.vendor_code %}
+                                <br><small class="text-muted">{{ assignment.vendor.vendor_code }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ assignment.quantity }}</span>
+                            </td>
+                            <td>
+                                {% if assignment.total_amount %}
+                                <strong>₹{{ "%.2f"|format(assignment.total_amount) }}</strong>
+                                {% if assignment.unit_price %}
+                                <br><small class="text-muted">₹{{ "%.2f"|format(assignment.unit_price) }}/unit</small>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if assignment.delivery_status == 'Pending' %}
+                                <span class="badge bg-warning">{{ assignment.delivery_status }}</span>
+                                {% elif assignment.delivery_status == 'In Transit' %}
+                                <span class="badge bg-info">{{ assignment.delivery_status }}</span>
+                                {% elif assignment.delivery_status == 'Delivered' %}
+                                <span class="badge bg-success">{{ assignment.delivery_status }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ assignment.delivery_status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ assignment.created_at.strftime('%Y-%m-%d') }}
+                                    {% if assignment.expected_delivery_date %}
+                                    <br>Due: {{ assignment.expected_delivery_date.strftime('%Y-%m-%d') }}
+                                    {% endif %}
+                                </small>
+                            </td>
+                            {% if user.role in ['Admin', 'MD', 'Accounts/SCM'] %}
+                            <td>
+                                <a href="{{ url_for('view_assignment_detail', assignment_id=assignment.id) }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if assignments.pages > 1 %}
+            <nav aria-label="Assignments pagination">
+                <ul class="pagination justify-content-center">
+                    {% if assignments.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('view_assignments', page=assignments.prev_num, status=selected_status, vendor_id=selected_vendor_id) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in assignments.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != assignments.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('view_assignments', page=page_num, status=selected_status, vendor_id=selected_vendor_id) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if assignments.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('view_assignments', page=assignments.next_num, status=selected_status, vendor_id=selected_vendor_id) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No assignments found</h5>
+                <p class="text-muted">Item assignments will appear here once created.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

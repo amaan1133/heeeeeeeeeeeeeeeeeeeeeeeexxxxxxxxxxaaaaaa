@@ -1,0 +1,175 @@
+
+{% extends "base.html" %}
+
+{% block title %}Fulfill Request - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-hand-holding-box me-2"></i>Fulfill Request from Assets
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Request Details -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Request Details</h6>
+                            <p><strong>Request ID:</strong> #{{ request.id }}</p>
+                            <p><strong>Item:</strong> {{ request.item_name }}</p>
+                            <p><strong>Quantity Needed:</strong> {{ request.quantity }}</p>
+                            <p><strong>Requester:</strong> {{ request.requester.full_name }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Request Info</h6>
+                            <p><strong>Type:</strong> {{ request.request_type }}</p>
+                            <p><strong>Purpose:</strong> {{ request.purpose[:100] }}{% if request.purpose|length > 100 %}...{% endif %}</p>
+                            <p><strong>Status:</strong> <span class="badge bg-success">{{ request.status }}</span></p>
+                        </div>
+                    </div>
+
+                    {% if assets %}
+                    <h6>Available Assets</h6>
+                    <form method="POST">
+                        <div class="table-responsive mb-3">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Select</th>
+                                        <th>Asset Tag</th>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Available Qty</th>
+                                        <th>Location</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for asset in assets %}
+                                    <tr>
+                                        <td>
+                                            <input type="radio" name="asset_id" value="{{ asset.id }}" 
+                                                   id="asset_{{ asset.id }}" required 
+                                                   onchange="updateFulfillmentDetails({{ asset.id }}, '{{ asset.asset_type }}', {{ asset.current_quantity }})">
+                                        </td>
+                                        <td><label for="asset_{{ asset.id }}">{{ asset.asset_tag }}</label></td>
+                                        <td>{{ asset.name }}</td>
+                                        <td>
+                                            {% if asset.asset_type == 'Consumable Asset' %}
+                                                <span class="badge bg-warning">Consumable</span>
+                                            {% else %}
+                                                <span class="badge bg-info">Fixed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if asset.asset_type == 'Consumable Asset' %}
+                                                {{ asset.current_quantity }} {{ asset.unit_of_measurement }}
+                                            {% else %}
+                                                1 Piece
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ asset.location or 'Not specified' }}</td>
+                                        <td>
+                                            <span class="badge bg-success">{{ asset.status }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="fulfill_quantity" class="form-label">Quantity to Fulfill *</label>
+                                    <input type="number" class="form-control" id="fulfill_quantity" 
+                                           name="fulfill_quantity" min="1" max="{{ request.quantity }}" 
+                                           value="{{ request.quantity }}" required>
+                                    <small class="text-muted">Maximum: {{ request.quantity }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">Fulfillment Notes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                              placeholder="Any notes about the fulfillment..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_requests') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-1"></i>Fulfill Request
+                            </button>
+                        </div>
+                    </form>
+
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>No Matching Assets Found</h6>
+                        <p>No assets found that match "{{ request.item_name }}" with sufficient quantity.</p>
+                        <p>Consider:</p>
+                        <ul>
+                            <li>Adding new assets to inventory</li>
+                            <li>Purchasing the items as originally requested</li>
+                            <li>Checking if similar assets exist with different names</li>
+                        </ul>
+                        <a href="{{ url_for('view_requests') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Requests
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Fulfillment Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-primary">Fixed Assets</h6>
+                    <ul class="small">
+                        <li>Can only fulfill quantity of 1</li>
+                        <li>Asset will be assigned to requester</li>
+                        <li>Asset status changes to "In Use"</li>
+                    </ul>
+
+                    <h6 class="text-warning">Consumable Assets</h6>
+                    <ul class="small">
+                        <li>Quantity will be deducted from inventory</li>
+                        <li>Inventory update will be logged</li>
+                        <li>Low stock alerts will trigger if below threshold</li>
+                    </ul>
+
+                    <div class="alert alert-info small mt-3">
+                        <strong>Note:</strong> Once fulfilled, the request status will change to "Fulfilled" and the quantity will be deducted from the selected asset. This action cannot be undone.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateFulfillmentDetails(assetId, assetType, currentQuantity) {
+    const quantityInput = document.getElementById('fulfill_quantity');
+    const requestedQuantity = {{ request.quantity }};
+    
+    if (assetType === 'Fixed Asset') {
+        quantityInput.max = 1;
+        quantityInput.value = 1;
+    } else {
+        quantityInput.max = Math.min(requestedQuantity, currentQuantity);
+        quantityInput.value = Math.min(requestedQuantity, currentQuantity);
+    }
+}
+</script>
+{% endblock %}

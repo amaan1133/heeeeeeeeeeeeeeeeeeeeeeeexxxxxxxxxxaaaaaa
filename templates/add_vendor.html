@@ -1,0 +1,137 @@
+
+{% extends "base.html" %}
+
+{% block title %}Add Vendor - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="text-primary">
+                <i class="fas fa-plus me-2"></i>Add New Vendor
+            </h2>
+            <p class="text-muted">Register a new vendor in the system</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Vendor Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="vendor_name" class="form-label">Vendor Name *</label>
+                                <input type="text" class="form-control" id="vendor_name" name="vendor_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="vendor_code" class="form-label">Vendor Code</label>
+                                <input type="text" class="form-control" id="vendor_code" name="vendor_code" 
+                                       placeholder="e.g., VEN001">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="contact_person" class="form-label">Contact Person</label>
+                                <input type="text" class="form-control" id="contact_person" name="contact_person">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="">Select Category</option>
+                                    <option value="IT Equipment">IT Equipment</option>
+                                    <option value="Furniture">Furniture</option>
+                                    <option value="Office Supplies">Office Supplies</option>
+                                    <option value="Medical Equipment">Medical Equipment</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                    <option value="Catering">Catering</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="phone" name="phone">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_terms" class="form-label">Payment Terms</label>
+                            <select class="form-select" id="payment_terms" name="payment_terms">
+                                <option value="">Select Payment Terms</option>
+                                <option value="Net 30">Net 30 Days</option>
+                                <option value="Net 15">Net 15 Days</option>
+                                <option value="COD">Cash on Delivery</option>
+                                <option value="Advance">Advance Payment</option>
+                                <option value="Custom">Custom Terms</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Additional notes about the vendor..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_vendors') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Vendors
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Vendor
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Use unique vendor codes for easy identification</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Select appropriate category for better organization</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Add contact details for better communication</small>
+                        </li>
+                        <li>
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Specify payment terms to avoid confusion</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+
+{% extends "base.html" %}
+
+{% block title %}Asset Assignments - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="text-primary">
+                <i class="fas fa-exchange-alt me-2"></i>Asset Assignments
+            </h2>
+            <p class="text-muted">Track assets assigned directly from inventory to fulfill requests</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Asset Assignment History
+                <span class="badge bg-primary ms-2">{{ assignments.total }} assignments</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if assignments.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Request Details</th>
+                            <th>Asset Assigned</th>
+                            <th>Assigned To</th>
+                            <th>Quantity</th>
+                            <th>Assigned By</th>
+                            <th>Assignment Date</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in assignments.items %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>Request #{{ assignment.id }}</strong>
+                                    <br>
+                                    <span class="text-muted">{{ assignment.item_name }}</span>
+                                    <br>
+                                    <small class="text-muted">{{ assignment.request_type }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ assignment.fulfilled_from_asset.asset_tag }}</strong>
+                                    <br>
+                                    <span class="text-muted">{{ assignment.fulfilled_from_asset.name }}</span>
+                                    <br>
+                                    <small class="badge bg-secondary">{{ assignment.fulfilled_from_asset.asset_type }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ assignment.requester.full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ assignment.requester.department }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ assignment.requester.floor }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ assignment.fulfilled_quantity }}</span>
+                                {% if assignment.fulfilled_from_asset.asset_type == 'Consumable Asset' %}
+                                    <br><small class="text-muted">{{ assignment.fulfilled_from_asset.unit_of_measurement }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ assignment.fulfilled_by_user.full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ assignment.fulfilled_by_user.role }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    {{ assignment.fulfilled_at.strftime('%Y-%m-%d') }}
+                                    <br>
+                                    <small class="text-muted">{{ assignment.fulfilled_at.strftime('%H:%M') }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                {% if assignment.fulfillment_notes %}
+                                    <small class="text-muted">{{ assignment.fulfillment_notes[:50] }}{% if assignment.fulfillment_notes|length > 50 %}...{% endif %}</small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if assignments.pages > 1 %}
+            <nav aria-label="Asset assignments pagination">
+                <ul class="pagination justify-content-center">
+                    {% if assignments.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('view_asset_assignments', page=assignments.prev_num) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in assignments.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != assignments.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('view_asset_assignments', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if assignments.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('view_asset_assignments', page=assignments.next_num) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No Asset Assignments Found</h5>
+                <p class="text-muted">Asset assignments will appear here when items are assigned directly from inventory.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

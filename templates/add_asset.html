@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Add Asset - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>Add New Asset
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="asset_tag" class="form-label">Asset Tag *</label>
+                                <input type="text" class="form-control" id="asset_tag" name="asset_tag" required>
+                                <div class="form-text">Unique identifier for this asset</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Asset Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Category *</label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="IT Equipment">IT Equipment</option>
+                                    <option value="Furniture">Furniture</option>
+                                    <option value="Vehicle">Vehicle</option>
+                                    <option value="Tools">Tools</option>
+                                    <option value="Office Equipment">Office Equipment</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="asset_type" class="form-label">Asset Type *</label>
+                                <select class="form-select" id="asset_type" name="asset_type" required onchange="toggleInventoryFields()">
+                                    <option value="">Select Asset Type</option>
+                                    <option value="Fixed Asset">Fixed Asset</option>
+                                    <option value="Consumable Asset">Consumable Asset</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6"></div>
+                            <div class="col-md-6">
+                                <label for="condition" class="form-label">Condition *</label>
+                                <select class="form-select" id="condition" name="condition" required>
+                                    <option value="Excellent">Excellent</option>
+                                    <option value="Good" selected>Good</option>
+                                    <option value="Fair">Fair</option>
+                                    <option value="Poor">Poor</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="brand" class="form-label">Brand</label>
+                                <input type="text" class="form-control" id="brand" name="brand">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="model" class="form-label">Model</label>
+                                <input type="text" class="form-control" id="model" name="model">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="serial_number" class="form-label">Serial Number</label>
+                                <input type="text" class="form-control" id="serial_number" name="serial_number">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="location" name="location">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="purchase_date" class="form-label">Purchase Date</label>
+                                <input type="date" class="form-control" id="purchase_date" name="purchase_date">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="warranty_expiry" class="form-label">Warranty Expiry</label>
+                                <input type="date" class="form-control" id="warranty_expiry" name="warranty_expiry">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="purchase_cost" class="form-label">Purchase Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="purchase_cost" name="purchase_cost" step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="current_value" class="form-label">Current Value</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="current_value" name="current_value" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="status" class="form-label">Status *</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="Available" selected>Available</option>
+                                    <option value="In Use">In Use</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                    <option value="Disposed">Disposed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="assigned_to" class="form-label">Assigned To</label>
+                                <select class="form-select" id="assigned_to" name="assigned_to">
+                                    <option value="">Unassigned</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Inventory Fields for Consumable Assets -->
+                        <div id="inventoryFields" style="display: none;">
+                            <h6 class="text-primary mb-3">Inventory Management</h6>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="current_quantity" class="form-label">Current Quantity</label>
+                                    <input type="number" class="form-control" id="current_quantity" name="current_quantity" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="minimum_threshold" class="form-label">Minimum Threshold</label>
+                                    <input type="number" class="form-control" id="minimum_threshold" name="minimum_threshold" min="1" value="5">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="unit_of_measurement" class="form-label">Unit of Measurement</label>
+                                    <select class="form-select" id="unit_of_measurement" name="unit_of_measurement">
+                                        <option value="Piece">Piece</option>
+                                        <option value="Box">Box</option>
+                                        <option value="Kg">Kg</option>
+                                        <option value="Liter">Liter</option>
+                                        <option value="Meter">Meter</option>
+                                        <option value="Pack">Pack</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_assets') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Assets
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Add Asset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleInventoryFields() {
+    const assetType = document.getElementById('asset_type').value;
+    const inventoryFields = document.getElementById('inventoryFields');
+
+    if (assetType === 'Consumable Asset') {
+        inventoryFields.style.display = 'block';
+        // Make fields required
+        document.getElementById('current_quantity').required = true;
+        document.getElementById('minimum_threshold').required = true;
+        document.getElementById('unit_of_measurement').required = true;
+    } else {
+        inventoryFields.style.display = 'none';
+        // Remove required attribute
+        document.getElementById('current_quantity').required = false;
+        document.getElementById('minimum_threshold').required = false;
+        document.getElementById('unit_of_measurement').required = false;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,161 @@
+
+{% extends "base.html" %}
+
+{% block title %}Assign Item - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>Create Item Assignment
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="item_name" class="form-label">Item Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="item_name" name="item_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="vendor_id" class="form-label">Vendor <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="vendor_id" name="vendor_id" required>
+                                        <option value="">Select Vendor</option>
+                                        {% for vendor in vendors %}
+                                        <option value="{{ vendor.id }}">{{ vendor.vendor_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="assigned_to" class="form-label">Assign To User <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="assigned_to" name="assigned_to" required>
+                                        <option value="">Select User</option>
+                                        {% for user in users %}
+                                        <option value="{{ user.id }}">{{ user.full_name }} ({{ user.department }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="unit_price" class="form-label">Unit Price (₹)</label>
+                                    <input type="number" class="form-control" id="unit_price" name="unit_price" step="0.01" min="0">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="expected_delivery_date" class="form-label">Expected Delivery Date</label>
+                                    <input type="date" class="form-control" id="expected_delivery_date" name="expected_delivery_date">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Total Amount (₹)</label>
+                                    <input type="text" class="form-control" id="total_amount" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Assignment Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Enter any special instructions or notes for this assignment..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_assignments') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Assignments
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check me-1"></i>Create Assignment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Assignment Guidelines
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Select the appropriate vendor for procurement
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Assign to the specific user who will receive the item
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Include unit price for budget tracking
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Set realistic delivery expectations
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Add notes for special requirements
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Quick Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <p class="mb-2">• Use this form to assign items directly to users</p>
+                        <p class="mb-2">• The vendor will deliver the item to the assigned user</p>
+                        <p class="mb-2">• Track delivery status in the assignments list</p>
+                        <p class="mb-0">• Update status when items are delivered</p>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-calculate total amount
+document.getElementById('unit_price').addEventListener('input', calculateTotal);
+document.getElementById('quantity').addEventListener('input', calculateTotal);
+
+function calculateTotal() {
+    const unitPrice = parseFloat(document.getElementById('unit_price').value) || 0;
+    const quantity = parseInt(document.getElementById('quantity').value) || 0;
+    const total = unitPrice * quantity;
+    document.getElementById('total_amount').value = total > 0 ? total.toFixed(2) : '';
+}
+</script>
+{% endblock %}

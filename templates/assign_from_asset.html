@@ -1,0 +1,190 @@
+
+{% extends "base.html" %}
+
+{% block title %}Assign from Asset - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-hand-holding-box me-2"></i>Assign from Asset Inventory
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Request Details</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Request #:</strong> {{ request.id }}<br>
+                                <strong>Item:</strong> {{ request.item_name }}<br>
+                                <strong>Requested Quantity:</strong> {{ request.quantity }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Requester:</strong> {{ request.requester.full_name }}<br>
+                                <strong>Department:</strong> {{ request.requester.department }}<br>
+                                <strong>Floor:</strong> {{ request.requester.floor }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if assets %}
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="asset_id" class="form-label">Select Asset to Assign <span class="text-danger">*</span></label>
+                            <select class="form-select" id="asset_id" name="asset_id" required onchange="updateQuantityLimits()">
+                                <option value="">Choose an available asset...</option>
+                                {% for asset in assets %}
+                                <option value="{{ asset.id }}" 
+                                        data-type="{{ asset.asset_type }}" 
+                                        data-quantity="{{ asset.current_quantity }}"
+                                        data-max="{% if asset.asset_type == 'Fixed Asset' %}1{% else %}{{ asset.current_quantity }}{% endif %}">
+                                    {{ asset.asset_tag }} - {{ asset.name }}
+                                    {% if asset.asset_type == 'Consumable Asset' %}
+                                        (Available: {{ asset.current_quantity }} {{ asset.unit_of_measurement }})
+                                    {% else %}
+                                        ({{ asset.condition }}, {{ asset.location }})
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="assign_quantity" class="form-label">Quantity to Assign <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="assign_quantity" name="assign_quantity" 
+                                   min="1" max="{{ request.quantity }}" value="{{ request.quantity }}" required>
+                            <div class="form-text">Maximum assignable: <span id="max-quantity">{{ request.quantity }}</span></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Assignment Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Enter any special notes for this assignment..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_requests') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Requests
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-1"></i>Assign Asset
+                            </button>
+                        </div>
+                    </form>
+
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>No Available Assets</h6>
+                        <p>No assets found that match "{{ request.item_name }}" or are available for assignment.</p>
+                        <p>Consider:</p>
+                        <ul>
+                            <li>Adding new assets to inventory</li>
+                            <li>Checking if similar assets exist with different names</li>
+                            <li>Proceeding with regular procurement process</li>
+                        </ul>
+                        <a href="{{ url_for('view_requests') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Requests
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Assignment Guidelines
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Fixed Assets:</strong> Can only assign quantity of 1
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Consumable Assets:</strong> Check available quantity
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Asset status will be updated automatically
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Assignment will be tracked in system
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Request will be marked as fulfilled
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            {% if assets %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Available Assets
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for asset in assets %}
+                    <div class="mb-2 p-2 border rounded">
+                        <strong>{{ asset.asset_tag }}</strong><br>
+                        <small class="text-muted">
+                            {{ asset.name }} - {{ asset.asset_type }}<br>
+                            {% if asset.asset_type == 'Consumable Asset' %}
+                                Available: {{ asset.current_quantity }} {{ asset.unit_of_measurement }}
+                            {% else %}
+                                Status: {{ asset.status }}, Location: {{ asset.location }}
+                            {% endif %}
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function updateQuantityLimits() {
+    const assetSelect = document.getElementById('asset_id');
+    const quantityInput = document.getElementById('assign_quantity');
+    const maxQuantitySpan = document.getElementById('max-quantity');
+    
+    if (assetSelect.value) {
+        const selectedOption = assetSelect.options[assetSelect.selectedIndex];
+        const assetType = selectedOption.dataset.type;
+        const maxQuantity = parseInt(selectedOption.dataset.max);
+        const requestedQuantity = {{ request.quantity }};
+        
+        const actualMax = Math.min(maxQuantity, requestedQuantity);
+        
+        quantityInput.max = actualMax;
+        maxQuantitySpan.textContent = actualMax;
+        
+        if (parseInt(quantityInput.value) > actualMax) {
+            quantityInput.value = actualMax;
+        }
+        
+        if (assetType === 'Fixed Asset') {
+            quantityInput.value = 1;
+            quantityInput.max = 1;
+            maxQuantitySpan.textContent = '1 (Fixed Asset)';
+        }
+    } else {
+        quantityInput.max = {{ request.quantity }};
+        maxQuantitySpan.textContent = {{ request.quantity }};
+    }
+}
+</script>
+{% endblock %}
