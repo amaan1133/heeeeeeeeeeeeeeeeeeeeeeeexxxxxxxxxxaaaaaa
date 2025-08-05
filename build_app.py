@@ -18,7 +18,6 @@ def create_compiled_executable():
     print("Hexamed Asset Management System - Build Script")
     print("=" * 50)
     
-    # Clean previous builds
     print("Cleaning previous builds...")
     if os.path.exists('build'):
         shutil.rmtree('build')
@@ -27,8 +26,7 @@ def create_compiled_executable():
     if os.path.exists('dist'):
         shutil.rmtree('dist')
         print("  Cleaned dist")
-    
-    # Install PyInstaller if not available
+    #Install PyInstaller if not already installed
     try:
         import PyInstaller
     except ImportError:
@@ -43,16 +41,16 @@ def create_compiled_executable():
     # PyInstaller command
     cmd = [
         'pyinstaller',
-        '--onefile',                    # Create single executable
-        '--windowed',                   # Hide console window
-        '--name=HexamedAssetManagement', # Executable name
-        '--icon=generated-icon.png',    # App icon
-        '--add-data=templates:templates', # Include templates
-        '--add-data=static:static',     # Include static files
+        '--onefile',                   
+        '--windowed',                  
+        '--name=HexamedAssetManagement', 
+        '--icon=generated-icon.png',    
+        '--add-data=templates:templates',  
+        '--add-data=static:static',    # Include specific static folder (if needed)
         '--add-data=uploads:uploads',   # Include uploads folder
         '--hidden-import=flask',
-        '--hidden-import=flask_sqlalchemy',
-        '--hidden-import=werkzeug',
+        '--hidden-import=flask_sqlalchemy',#Include hidden imports
+        '--hidden-import=werkzeug',         #Include all uploaded files
         '--hidden-import=sqlalchemy',
         '--hidden-import=openpyxl',
         '--hidden-import=pandas',
