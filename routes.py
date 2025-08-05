@@ -2167,6 +2167,76 @@ def escalate_to_md(request_id):
     flash(f'Request #{request_id} has been escalated to MD for review.', 'info')
     return redirect(url_for('view_requests'))
 
+@app.route('/delete-all-data')
+@require_role(['MD'])
+def delete_all_data():
+    """Delete all application data - MD ONLY"""
+    try:
+        # Clear all data from tables
+        db.session.execute(text('DELETE FROM activity_log'))
+        db.session.execute(text('DELETE FROM approval'))
+        db.session.execute(text('DELETE FROM uploaded_file'))
+        db.session.execute(text('DELETE FROM asset_request'))
+        db.session.execute(text('DELETE FROM bill'))
+        db.session.execute(text('DELETE FROM inventory_update'))
+        db.session.execute(text('DELETE FROM item_assignment'))
+        db.session.execute(text('DELETE FROM asset_maintenance'))
+        db.session.execute(text('DELETE FROM asset_depreciation'))
+        db.session.execute(text('DELETE FROM warranty_alert'))
+        db.session.execute(text('DELETE FROM procurement_quotation'))
+        db.session.execute(text('DELETE FROM asset'))
+        db.session.execute(text('DELETE FROM vendor'))
+        db.session.execute(text('DELETE FROM user'))
+        
+        # Clear uploads folder
+        uploads_folder = app.config['UPLOAD_FOLDER']
+        if os.path.exists(uploads_folder):
+            for filename in os.listdir(uploads_folder):
+                if filename != '.gitkeep':
+                    file_path = os.path.join(uploads_folder, filename)
+                    try:
+                        if os.path.isfile(file_path):
+                            os.unlink(file_path)
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
+                    except Exception as e:
+                        pass
+        
+        # Create new admin user
+        admin_user = User()
+        admin_user.username = 'admin'
+        admin_user.email = 'admin@hexamed.com'
+        admin_user.full_name = 'System Administrator'
+        admin_user.role = 'MD'
+        admin_user.floor = 'All'
+        admin_user.department = 'Admin Block'
+        admin_user.set_password('hexamed123')
+        db.session.add(admin_user)
+        
+        # Create accounts user
+        accounts_user = User()
+        accounts_user.username = 'accounts'
+        accounts_user.email = 'accounts@hexamed.com'
+        accounts_user.full_name = 'Accounts Department'
+        accounts_user.role = 'Accounts/SCM'
+        accounts_user.floor = 'All'
+        accounts_user.department = 'Accounts'
+        accounts_user.set_password('accounts123')
+        db.session.add(accounts_user)
+        
+        db.session.commit()
+        
+        # Log out current user
+        session.clear()
+        
+        flash('All application data has been deleted successfully! Please login with admin/hexamed123', 'success')
+        return redirect(url_for('login'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting data: {str(e)}', 'danger')
+        return redirect(url_for('admin_panel'))
+
 @app.errorhandler(500)
 def internal_error(error):
     db.session.rollback()
