@@ -11,19 +11,6 @@ from models import (User, AssetRequest, UploadedFile, Approval, ActivityLog, Ass
                    InventoryUpdate, Vendor, ItemAssignment, AssetMaintenance, AssetDepreciation, 
                    WarrantyAlert, ProcurementQuotation)
 
-import os
-import uuid
-import shutil
-from datetime import datetime, date, timedelta
-from dateutil.relativedelta import relativedelta
-from flask import render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify
-from werkzeug.utils import secure_filename
-from sqlalchemy import text, or_, inspect, and_
-from app import app, db
-from models import (User, AssetRequest, UploadedFile, Approval, ActivityLog, Asset, Bill, 
-                   InventoryUpdate, Vendor, ItemAssignment, AssetMaintenance, AssetDepreciation, 
-                   WarrantyAlert, ProcurementQuotation)
-
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx'}
 
 def allowed_file(filename):
@@ -1801,52 +1788,52 @@ def view_asset_assignments():
 @require_login
 def asset_lifecycle_dashboard():
     user = User.query.get(session['user_id'])
-    
+
     # Get maintenance schedules
     maintenance_schedules = AssetMaintenance.query.filter_by(
         status='Scheduled'
     ).order_by(AssetMaintenance.scheduled_date).all()
-    
+
     # Get warranty alerts
     warranty_alerts = WarrantyAlert.query.filter_by(
         alert_type='Warranty Expiry'
     ).order_by(WarrantyAlert.alert_date).all()
-    
+
     # Get assets with warranty expiring soon
     from datetime import date, timedelta
     today = date.today()
     thirty_days_later = today + timedelta(days=30)
     seven_days_later = today + timedelta(days=7)
-    
+
     warranty_expiring = Asset.query.filter(
         Asset.warranty_expiry.isnot(None),
         Asset.warranty_expiry <= thirty_days_later,
         Asset.warranty_expiry >= today
     ).order_by(Asset.warranty_expiry).all()
-    
+
     # Get maintenance due in next 7 days
     maintenance_due = AssetMaintenance.query.filter(
         AssetMaintenance.scheduled_date <= seven_days_later,
         AssetMaintenance.scheduled_date >= today,
         AssetMaintenance.status == 'Scheduled'
     ).order_by(AssetMaintenance.scheduled_date).all()
-    
+
     # Get active alerts
     active_alerts = WarrantyAlert.query.filter_by(is_active=True).limit(5).all()
-    
+
     # Calculate statistics
     warranty_expiring_count = len(warranty_expiring)
     maintenance_due_count = len(maintenance_due)
     current_book_value = sum([a.current_value for a in Asset.query.all() if a.current_value]) or 0
     active_alerts_count = WarrantyAlert.query.filter_by(is_active=True).count()
-    
+
     stats = {
         'warranty_expiring_count': warranty_expiring_count,
         'maintenance_due_count': maintenance_due_count,
         'current_book_value': current_book_value,
         'active_alerts_count': active_alerts_count
     }
-    
+
     return render_template('asset_lifecycle.html', 
                          user=user,
                          maintenance_schedules=maintenance_schedules,
@@ -1862,14 +1849,14 @@ def asset_lifecycle_dashboard():
 def view_maintenance():
     page = request.args.get('page', 1, type=int)
     status = request.args.get('status', '')
-    
+
     query = AssetMaintenance.query
     if status:
         query = query.filter_by(status=status)
-    
+
     maintenance_records = query.order_by(AssetMaintenance.created_at.desc()).paginate(
         page=page, per_page=15, error_out=False)
-    
+
     user = User.query.get(session['user_id'])
     return render_template('maintenance.html', 
                          maintenance_records=maintenance_records,
@@ -1889,15 +1876,15 @@ def add_maintenance():
         maintenance.service_provider = request.form.get('assigned_to', '')
         maintenance.maintenance_notes = request.form.get('notes', '')
         maintenance.created_by = session['user_id']
-        
+
         db.session.add(maintenance)
         db.session.commit()
-        
+
         log_activity(session['user_id'], 'Maintenance Scheduled', 
                     f'Scheduled {maintenance.maintenance_type} for asset ID {maintenance.asset_id}')
         flash('Maintenance scheduled successfully!', 'success')
         return redirect(url_for('view_maintenance'))
-    
+
     assets = Asset.query.all()
     return render_template('add_maintenance.html', assets=assets)
 
@@ -1905,15 +1892,15 @@ def add_maintenance():
 @require_role(['Admin', 'MD', 'Accounts/SCM'])
 def complete_maintenance(maintenance_id):
     maintenance = AssetMaintenance.query.get_or_404(maintenance_id)
-    
+
     maintenance.status = 'Completed'
     maintenance.completed_date = datetime.utcnow().date()
     maintenance.cost = float(request.form.get('cost', 0)) if request.form.get('cost') else None
     maintenance.maintenance_notes = request.form.get('notes', '')
     maintenance.updated_by = session['user_id']
-    
+
     db.session.commit()
-    
+
     log_activity(session['user_id'], 'Maintenance Completed', 
                 f'Completed maintenance for asset {maintenance.asset.asset_tag}')
     flash('Maintenance marked as completed!', 'success')
@@ -1935,43 +1922,43 @@ def custom_reports():
 @require_role(['Admin', 'MD', 'Accounts/SCM'])
 def analytics_dashboard():
     user = User.query.get(session['user_id'])
-    
+
     # Get basic counts
     total_requests = AssetRequest.query.count()
     approved_requests = AssetRequest.query.filter_by(status='Approved').count()
     pending_requests = AssetRequest.query.filter_by(status='Pending').count()
     fulfilled_requests = AssetRequest.query.filter_by(status='Fulfilled').count()
     rejected_requests = AssetRequest.query.filter_by(status='Rejected').count()
-    
+
     total_assets = Asset.query.count()
     fixed_assets = Asset.query.filter_by(asset_type='Fixed Asset').count()
     consumable_assets = Asset.query.filter_by(asset_type='Consumable Asset').count()
     available_assets = Asset.query.filter_by(status='Available').count()
     in_use_assets = Asset.query.filter_by(status='In Use').count()
-    
+
     total_vendors = Vendor.query.filter_by(is_active=True).count()
     total_quotations = ProcurementQuotation.query.count()
-    
+
     total_maintenance = AssetMaintenance.query.count()
     completed_maintenance = AssetMaintenance.query.filter_by(status='Completed').count()
     pending_maintenance = AssetMaintenance.query.filter_by(status='Scheduled').count()
-    
+
     # Calculate rates
     approval_rate = (approved_requests / total_requests * 100) if total_requests > 0 else 0
     utilization_rate = (in_use_assets / total_assets * 100) if total_assets > 0 else 0
     completion_rate = (completed_maintenance / total_maintenance * 100) if total_maintenance > 0 else 0
     quote_approval_rate = 75.0  # Placeholder
-    
+
     # Calculate financial data
     total_estimated = sum([r.estimated_cost for r in AssetRequest.query.all() if r.estimated_cost])
     total_asset_value = sum([a.current_value for a in Asset.query.all() if a.current_value])
     total_bills = sum([b.bill_amount for b in Bill.query.all()])
     cost_variance = total_estimated - total_bills
-    
+
     # Get department distribution
     dept_query = db.session.query(User.department, db.func.count(AssetRequest.id)).join(AssetRequest, User.id == AssetRequest.user_id).group_by(User.department).all()
     department_distribution = [(dept, count) for dept, count in dept_query]
-    
+
     # Get monthly trends (last 6 months)
     from dateutil.relativedelta import relativedelta
     monthly_trends = []
@@ -1984,7 +1971,7 @@ def analytics_dashboard():
         ).count()
         monthly_trends.append({'month': month_start, 'count': count})
     monthly_trends.reverse()
-    
+
     # Create analytics object
     class AnalyticsData:
         def __init__(self):
@@ -1995,7 +1982,7 @@ def analytics_dashboard():
                 'fulfilled': fulfilled_requests,
                 'approval_rate': approval_rate
             })()
-            
+
             self.asset_stats = type('obj', (object,), {
                 'total': total_assets,
                 'fixed': fixed_assets,
@@ -2004,32 +1991,32 @@ def analytics_dashboard():
                 'in_use': in_use_assets,
                 'utilization_rate': utilization_rate
             })()
-            
+
             self.maintenance_stats = type('obj', (object,), {
                 'total': total_maintenance,
                 'completed': completed_maintenance,
                 'pending': pending_maintenance,
                 'completion_rate': completion_rate
             })()
-            
+
             self.cost_stats = type('obj', (object,), {
                 'total_estimated': total_estimated,
                 'total_asset_value': total_asset_value,
                 'total_bills': total_bills,
                 'cost_variance': cost_variance
             })()
-            
+
             self.vendor_stats = type('obj', (object,), {
                 'total_vendors': total_vendors,
                 'total_quotations': total_quotations,
                 'quote_approval_rate': quote_approval_rate
             })()
-            
+
             self.department_distribution = department_distribution
             self.monthly_trends = monthly_trends
-    
+
     analytics = AnalyticsData()
-    
+
     return render_template('analytics.html', 
                          user=user,
                          analytics=analytics)
@@ -2040,14 +2027,14 @@ def analytics_dashboard():
 def view_quotations():
     page = request.args.get('page', 1, type=int)
     status = request.args.get('status', '')
-    
+
     query = ProcurementQuotation.query
     if status:
         query = query.filter_by(status=status)
-    
+
     quotations = query.order_by(ProcurementQuotation.created_at.desc()).paginate(
         page=page, per_page=15, error_out=False)
-    
+
     user = User.query.get(session['user_id'])
     return render_template('quotations.html', 
                          quotations=quotations,
@@ -2072,15 +2059,15 @@ def add_quotation():
         quotation.additional_costs = float(request.form.get('additional_costs', 0))
         quotation.total_cost = quotation.quoted_price * quotation.quoted_quantity + quotation.additional_costs
         quotation.submitted_by = session['user_id']
-        
+
         db.session.add(quotation)
         db.session.commit()
-        
+
         log_activity(session['user_id'], 'Quotation Added', 
                     f'Added quotation {quotation.quotation_number} from {quotation.vendor.vendor_name}')
         flash('Quotation added successfully!', 'success')
         return redirect(url_for('view_quotations'))
-    
+
     vendors = Vendor.query.filter_by(is_active=True).all()
     requests = AssetRequest.query.filter_by(status='Approved').all()
     return render_template('add_quotation.html', vendors=vendors, requests=requests)
@@ -2092,15 +2079,15 @@ def api_search():
     query = request.args.get('q', '').strip()
     if len(query) < 2:
         return jsonify({'results': []})
-    
+
     user = User.query.get(session['user_id'])
     results = []
-    
+
     # Search requests
     requests = AssetRequest.query.filter(
         AssetRequest.item_name.ilike(f'%{query}%')
     ).limit(5).all()
-    
+
     for req in requests:
         results.append({
             'type': 'Request',
@@ -2110,12 +2097,12 @@ def api_search():
             'icon': 'fas fa-list',
             'status': req.status
         })
-    
+
     # Search assets
     assets = Asset.query.filter(
         or_(Asset.name.ilike(f'%{query}%'), Asset.asset_tag.ilike(f'%{query}%'))
     ).limit(5).all()
-    
+
     for asset in assets:
         results.append({
             'type': 'Asset',
@@ -2125,13 +2112,13 @@ def api_search():
             'icon': 'fas fa-boxes',
             'status': asset.status
         })
-    
+
     # Search vendors (if user has permission)
     if user.role in ['Admin', 'MD', 'Accounts/SCM']:
         vendors = Vendor.query.filter(
             Vendor.vendor_name.ilike(f'%{query}%')
         ).limit(5).all()
-        
+
         for vendor in vendors:
             results.append({
                 'type': 'Vendor',
@@ -2141,8 +2128,44 @@ def api_search():
                 'icon': 'fas fa-truck',
                 'status': 'Active' if vendor.is_active else 'Inactive'
             })
-    
+
     return jsonify({'results': results})
+
+@app.route('/escalate-to-md/<int:request_id>', methods=['POST'])
+@require_role(['Admin', 'Accounts/SCM'])
+def escalate_to_md(request_id):
+    """Escalate request directly to MD when there are issues"""
+    user = User.query.get(session['user_id'])
+    asset_request = AssetRequest.query.get_or_404(request_id)
+
+    if asset_request.status not in ['Pending', 'Approved']:
+        flash('Only pending or approved requests can be escalated to MD.', 'warning')
+        return redirect(url_for('view_requests'))
+
+    escalation_reason = request.form.get('escalation_reason', '')
+
+    # Create escalation approval record
+    approval = Approval()
+    approval.request_id = request_id
+    approval.approver_id = user.id
+    approval.approval_level = asset_request.current_approval_level
+    approval.action = 'Escalated to MD'
+    approval.comments = f'Escalated to MD. Reason: {escalation_reason}'
+    db.session.add(approval)
+
+    # Update request to MD level
+    asset_request.current_approval_level = 999  # Special MD level
+    asset_request.status = 'Pending'
+    asset_request.updated_at = datetime.utcnow()
+
+    db.session.commit()
+
+    log_activity(user.id, 'Request Escalated', 
+                f'Escalated request #{request_id} to MD. Reason: {escalation_reason}',
+                request_id)
+
+    flash(f'Request #{request_id} has been escalated to MD for review.', 'info')
+    return redirect(url_for('view_requests'))
 
 @app.errorhandler(500)
 def internal_error(error):
