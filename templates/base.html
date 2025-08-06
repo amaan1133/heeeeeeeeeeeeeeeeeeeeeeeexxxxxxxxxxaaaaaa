@@ -241,13 +241,32 @@
                     }
                 });
 
-                // Handle dropdown in mobile
+                // Handle dropdown in mobile - improved
                 const dropdownToggle = document.querySelector('.navbar-collapse .dropdown-toggle');
-                if (dropdownToggle) {
+                const dropdownMenu = document.querySelector('.navbar-collapse .dropdown-menu');
+                
+                if (dropdownToggle && dropdownMenu) {
                     dropdownToggle.addEventListener('click', function(e) {
                         e.preventDefault();
-                        const dropdownMenu = this.nextElementSibling;
-                        dropdownMenu.classList.toggle('show');
+                        e.stopPropagation();
+                        
+                        const isOpen = dropdownMenu.classList.contains('show');
+                        
+                        if (isOpen) {
+                            dropdownMenu.classList.remove('show');
+                            dropdownToggle.setAttribute('aria-expanded', 'false');
+                        } else {
+                            dropdownMenu.classList.add('show');
+                            dropdownToggle.setAttribute('aria-expanded', 'true');
+                        }
+                    });
+                    
+                    // Close dropdown when clicking outside
+                    document.addEventListener('click', function(e) {
+                        if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                            dropdownMenu.classList.remove('show');
+                            dropdownToggle.setAttribute('aria-expanded', 'false');
+                        }
                     });
                 }
             }

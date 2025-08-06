@@ -569,12 +569,19 @@ body {
         }
 
         .navbar-collapse .dropdown-menu {
-            position: static;
+            position: static !important;
             width: calc(100% - 2rem);
             margin: 0.5rem 1rem;
             border: 1px solid #e2e8f0;
             border-radius: 0.5rem;
-            box-shadow: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none;
+            float: none;
+            transform: none !important;
+        }
+        
+        .navbar-collapse .dropdown-menu.show {
+            display: block !important;
         }
 
         .navbar-collapse .dropdown-menu .dropdown-item {
