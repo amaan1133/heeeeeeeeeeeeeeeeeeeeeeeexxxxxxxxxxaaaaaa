@@ -1,0 +1,372 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order - {{ po.po_number }}</title>
+    <style>
+        @media print {
+            .no-print { display: none; }
+            body { margin: 0; }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+        }
+        
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .company-address {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .po-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-top: 15px;
+        }
+        
+        .po-info {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        
+        .po-details, .vendor-details {
+            width: 48%;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            font-size: 14px;
+            color: #2c3e50;
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .detail-row {
+            margin-bottom: 5px;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 120px;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .items-table th, .items-table td {
+            border: 1px solid #bdc3c7;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .items-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .amount-row {
+            font-weight: bold;
+        }
+        
+        .grand-total {
+            background-color: #e8f5e8;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .terms-section {
+            margin-top: 30px;
+        }
+        
+        .signature-section {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .signature-box {
+            width: 200px;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 50px;
+            padding-top: 5px;
+        }
+        
+        .print-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        .print-button:hover {
+            background-color: #2980b9;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-approved { background-color: #d4edda; color: #155724; }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-generated { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="print-button" onclick="window.print()">
+            <i class="fas fa-print"></i> Print Purchase Order
+        </button>
+        <button class="print-button" onclick="window.close()" style="background-color: #95a5a6;">
+            Close
+        </button>
+    </div>
+
+    <div class="header">
+        <div class="company-name">HEXAMED HEALTHCARE SOLUTIONS</div>
+        <div class="company-address">
+            Healthcare Technology & Asset Management<br>
+            Email: info@hexamed.com | Phone: +91-XXXX-XXXXXX
+        </div>
+        <div class="po-title">PURCHASE ORDER</div>
+        <div style="margin-top: 10px;">
+            <span class="status-badge status-{{ po.status.lower().replace(' ', '-') }}">{{ po.status }}</span>
+        </div>
+    </div>
+
+    <div class="po-info">
+        <div class="po-details">
+            <div class="section-title">Purchase Order Details</div>
+            <div class="detail-row">
+                <span class="detail-label">PO Number:</span>
+                <strong>{{ po.po_number }}</strong>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Date:</span>
+                {{ po.created_at.strftime('%d/%m/%Y') if po.created_at else 'N/A' }}
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Item Type:</span>
+                <span class="badge bg-{{ 'success' if po.item_type == 'Regular' else 'warning' }}">{{ po.item_type }}</span>
+            </div>
+            {% if po.expected_delivery_date %}
+            <div class="detail-row">
+                <span class="detail-label">Expected Delivery:</span>
+                {{ po.expected_delivery_date.strftime('%d/%m/%Y') }}
+            </div>
+            {% endif %}
+            <div class="detail-row">
+                <span class="detail-label">Created By:</span>
+                {{ po.creator.full_name if po.creator else 'N/A' }}
+            </div>
+            {% if po.request_id %}
+            <div class="detail-row">
+                <span class="detail-label">Request ID:</span>
+                #{{ po.request_id }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="vendor-details">
+            <div class="section-title">Vendor Details</div>
+            <div class="detail-row">
+                <span class="detail-label">Vendor Name:</span>
+                <strong>{{ po.vendor_name }}</strong>
+            </div>
+            {% if po.vendor.contact_person %}
+            <div class="detail-row">
+                <span class="detail-label">Contact Person:</span>
+                {{ po.vendor.contact_person }}
+            </div>
+            {% endif %}
+            {% if po.vendor.phone %}
+            <div class="detail-row">
+                <span class="detail-label">Phone:</span>
+                {{ po.vendor.phone }}
+            </div>
+            {% endif %}
+            {% if po.vendor.email %}
+            <div class="detail-row">
+                <span class="detail-label">Email:</span>
+                {{ po.vendor.email }}
+            </div>
+            {% endif %}
+            {% if po.vendor_address %}
+            <div class="detail-row">
+                <span class="detail-label">Address:</span>
+                {{ po.vendor_address }}
+            </div>
+            {% endif %}
+            {% if po.vendor_gst %}
+            <div class="detail-row">
+                <span class="detail-label">GST Number:</span>
+                {{ po.vendor_gst }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 35%;">Item Description</th>
+                <th style="width: 10%;">Quantity</th>
+                <th style="width: 15%;">Unit Price (₹)</th>
+                <th style="width: 15%;">Total Amount (₹)</th>
+                <th style="width: 10%;">GST %</th>
+                <th style="width: 10%;">GST Amount (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>
+                    <strong>{{ po.item_name }}</strong>
+                    {% if po.item_description %}
+                    <br><small style="color: #666;">{{ po.item_description }}</small>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">{{ po.quantity }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(po.unit_price) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(po.total_amount) }}</td>
+                <td style="text-align: center;">{{ po.gst_percentage }}%</td>
+                <td style="text-align: right;">{{ "%.2f"|format(po.gst_amount) }}</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr class="amount-row">
+                <td colspan="4" style="text-align: right; border: none;"><strong>Subtotal:</strong></td>
+                <td style="text-align: right;"><strong>₹{{ "%.2f"|format(po.total_amount) }}</strong></td>
+                <td colspan="2" style="border: none;"></td>
+            </tr>
+            <tr class="amount-row">
+                <td colspan="4" style="text-align: right; border: none;"><strong>GST ({{ po.gst_percentage }}%):</strong></td>
+                <td style="text-align: right;"><strong>₹{{ "%.2f"|format(po.gst_amount) }}</strong></td>
+                <td colspan="2" style="border: none;"></td>
+            </tr>
+            <tr class="grand-total">
+                <td colspan="4" style="text-align: right; border: none;"><strong>GRAND TOTAL:</strong></td>
+                <td style="text-align: right;"><strong>₹{{ "%.2f"|format(po.grand_total) }}</strong></td>
+                <td colspan="2" style="border: none;"></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="terms-section">
+        <div class="section-title">Terms & Conditions</div>
+        
+        {% if po.payment_terms %}
+        <div class="detail-row">
+            <span class="detail-label">Payment Terms:</span>
+            {{ po.payment_terms }}
+        </div>
+        {% endif %}
+        
+        {% if po.delivery_terms %}
+        <div class="detail-row">
+            <span class="detail-label">Delivery Terms:</span>
+            {{ po.delivery_terms }}
+        </div>
+        {% endif %}
+        
+        {% if po.warranty_terms %}
+        <div class="detail-row">
+            <span class="detail-label">Warranty Terms:</span>
+            {{ po.warranty_terms }}
+        </div>
+        {% endif %}
+        
+        {% if po.special_instructions %}
+        <div class="detail-row" style="margin-top: 15px;">
+            <span class="detail-label">Special Instructions:</span>
+            <div style="margin-top: 5px; padding: 10px; background-color: #f8f9fa; border-left: 3px solid #007bff;">
+                {{ po.special_instructions|replace('\n', '<br>')|safe }}
+            </div>
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 20px; font-size: 11px; color: #666;">
+            <strong>General Terms:</strong><br>
+            1. All prices are inclusive of GST as mentioned.<br>
+            2. Delivery should be made as per the schedule mentioned above.<br>
+            3. Quality of goods should meet the specified standards.<br>
+            4. Payment will be processed as per the agreed terms.<br>
+            5. Any disputes will be resolved through mutual discussion.
+        </div>
+    </div>
+
+    {% if po.md_approved and po.md_comments %}
+    <div class="terms-section">
+        <div class="section-title">MD Approval Comments</div>
+        <div style="padding: 10px; background-color: #d4edda; border-left: 3px solid #28a745; color: #155724;">
+            <strong>Approved by:</strong> {{ po.approver.full_name if po.approver else 'MD' }}<br>
+            <strong>Date:</strong> {{ po.approved_at.strftime('%d/%m/%Y %H:%M') if po.approved_at else 'N/A' }}<br>
+            {% if po.md_comments %}
+            <strong>Comments:</strong> {{ po.md_comments }}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-line">
+                <strong>Authorized Signature</strong><br>
+                <small>Hexamed Healthcare Solutions</small>
+            </div>
+        </div>
+        
+        <div class="signature-box">
+            <div class="signature-line">
+                <strong>Vendor Acknowledgment</strong><br>
+                <small>{{ po.vendor_name }}</small>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #999;">
+        <p>This is a computer-generated document. No signature is required.</p>
+        <p>Generated on: {{ now().strftime('%d/%m/%Y %H:%M:%S') }} | PO ID: {{ po.id }}</p>
+    </div>
+</body>
+</html>
