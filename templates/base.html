@@ -28,6 +28,20 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- Global Search in Navbar (moved to collapsed menu) -->
+                <div class="navbar-nav d-block d-lg-none">
+                    <div class="nav-item search-container">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="navSearchMobile" 
+                                   placeholder="Quick search..." autocomplete="off">
+                            <button class="btn btn-outline-primary" type="button" id="navSearchButtonMobile">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div id="navSearchResultsMobile" class="search-results position-relative bg-white border rounded shadow-lg mt-2" style="display: none; max-height: 300px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('dashboard') }}">
@@ -112,20 +126,6 @@
                     </li>
                 </ul>
 
-                <!-- Global Search in Navbar -->
-                <div class="navbar-nav me-3 d-none d-lg-block">
-                    <div class="nav-item search-container position-relative">
-                        <div class="input-group" style="width: 250px;">
-                            <input type="text" class="form-control form-control-sm" id="navSearch" 
-                                   placeholder="Quick search..." autocomplete="off">
-                            <button class="btn btn-outline-light btn-sm" type="button" id="navSearchButton">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                        <div id="navSearchResults" class="search-results position-absolute bg-white border rounded shadow-lg" style="top: 100%; right: 0; z-index: 1000; display: none; max-height: 400px; overflow-y: auto; width: 300px;"></div>
-                    </div>
-                </div>
-
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
@@ -201,6 +201,7 @@
 
     <!-- Global Search JavaScript for Navbar -->
     <script>
+    // Desktop search functionality (if exists)
     if (document.getElementById('navSearch')) {
         let navSearchTimeout;
         const navSearchInput = document.getElementById('navSearch');
@@ -302,6 +303,112 @@
         document.addEventListener('click', function(e) {
             if (!e.target.closest('#navSearch') && !e.target.closest('#navSearchResults')) {
                 navSearchResults.style.display = 'none';
+            }
+        });
+    }
+
+    // Mobile search functionality
+    if (document.getElementById('navSearchMobile')) {
+        let navSearchTimeoutMobile;
+        const navSearchInputMobile = document.getElementById('navSearchMobile');
+        const navSearchResultsMobile = document.getElementById('navSearchResultsMobile');
+        const navSearchButtonMobile = document.getElementById('navSearchButtonMobile');
+
+        function performNavSearchMobile() {
+            const query = navSearchInputMobile.value.trim();
+
+            if (query.length < 2) {
+                navSearchResultsMobile.style.display = 'none';
+                return;
+            }
+
+            fetch(`/api/search?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayNavSearchResultsMobile(data.results);
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    navSearchResultsMobile.innerHTML = '<div class="p-3 text-danger">Search error occurred</div>';
+                    navSearchResultsMobile.style.display = 'block';
+                });
+        }
+
+        function displayNavSearchResultsMobile(results) {
+            if (results.length === 0) {
+                navSearchResultsMobile.innerHTML = '<div class="p-3 text-muted">No results found</div>';
+                navSearchResultsMobile.style.display = 'block';
+                return;
+            }
+
+            let html = '<div class="list-group list-group-flush">';
+
+            results.slice(0, 5).forEach(result => {
+                let statusBadge = '';
+                let badgeClass = 'secondary';
+
+                if (result.status) {
+                    switch(result.status.toLowerCase()) {
+                        case 'pending': badgeClass = 'warning'; break;
+                        case 'approved': badgeClass = 'success'; break;
+                        case 'rejected': badgeClass = 'danger'; break;
+                        case 'available': badgeClass = 'success'; break;
+                        case 'in use': badgeClass = 'primary'; break;
+                        case 'maintenance': badgeClass = 'warning'; break;
+                        case 'active': badgeClass = 'success'; break;
+                        case 'inactive': badgeClass = 'secondary'; break;
+                    }
+                    statusBadge = `<span class="badge bg-${badgeClass} ms-2">${result.status}</span>`;
+                }
+
+                html += `
+                    <a href="${result.url}" class="list-group-item list-group-item-action border-0 py-2">
+                        <div class="d-flex align-items-center">
+                            <div class="me-2 text-primary">
+                                <i class="${result.icon}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 small">${result.title}${statusBadge}</h6>
+                                    <small class="text-muted text-uppercase">${result.type}</small>
+                                </div>
+                                <small class="text-muted">${result.subtitle}</small>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            });
+
+            html += '</div>';
+            navSearchResultsMobile.innerHTML = html;
+            navSearchResultsMobile.style.display = 'block';
+        }
+
+        // Event listeners for mobile search
+        navSearchInputMobile.addEventListener('input', function() {
+            clearTimeout(navSearchTimeoutMobile);
+            navSearchTimeoutMobile = setTimeout(performNavSearchMobile, 300);
+        });
+
+        navSearchInputMobile.addEventListener('focus', function() {
+            if (this.value.trim().length >= 2) {
+                performNavSearchMobile();
+            }
+        });
+
+        navSearchButtonMobile.addEventListener('click', performNavSearchMobile);
+
+        navSearchInputMobile.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                performNavSearchMobile();
+            }
+        });
+
+        // Hide mobile search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#navSearchMobile') && !e.target.closest('#navSearchResultsMobile')) {
+                navSearchResultsMobile.style.display = 'none';
             }
         });
     }
