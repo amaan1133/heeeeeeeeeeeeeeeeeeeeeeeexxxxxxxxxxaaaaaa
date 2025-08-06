@@ -1906,7 +1906,7 @@ def generate_final_purchase_order(po_id):
 @require_role(['Accounts/SCM', 'Admin', 'MD'])
 def print_purchase_order(po_id):
     po = PurchaseOrder.query.get_or_404(po_id)
-    return render_template('print_purchase_order.html', po=po)
+    return render_template('print_purchase_order.html', po=po, moment=datetime.now)
 
 @app.route('/purchase-order/<int:po_id>/update-status', methods=['POST'])
 @require_role(['Accounts/SCM', 'Admin'])
