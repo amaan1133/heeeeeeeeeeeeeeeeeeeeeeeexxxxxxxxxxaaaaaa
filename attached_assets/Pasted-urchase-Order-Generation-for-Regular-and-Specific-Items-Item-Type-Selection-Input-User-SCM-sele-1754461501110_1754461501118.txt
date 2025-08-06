@@ -1,0 +1,79 @@
+urchase Order Generation for Regular and Specific Items
+Item Type Selection:
+
+Input: User (SCM) selects whether the item is a Regular or Specific item.
+
+Logic:
+
+If the item is Regular, no approval is needed from MD, and SCM can directly generate the PO.
+
+If the item is Specific, MD approval is required before generating the PO.
+
+2. Regular Item Purchase Order Process (No MD Approval)
+Input: SCM requests the purchase of a Regular Item.
+
+Logic: SCM proceeds directly to generate the purchase order.
+
+SCM enters item details, vendor details, and pricing.
+
+The PO is generated without requiring MD approval.
+
+Output: The purchase order is created, and the request is complete.
+
+3. Specific Item Purchase Order Process (Requires MD Approval)
+Input: SCM requests the purchase of a Specific Item.
+
+Logic:
+
+SCM updates the request with quotation details, vendor information, and vendor PDFs.
+
+The request is sent to MD for approval.
+
+Output: "MD Review Pending" notification is displayed.
+
+4. MD Review Process
+Input: MD reviews the attached quotations and vendor PDFs.
+
+Logic:
+
+MD selects the vendor from the list provided by SCM.
+
+MD can either approve or reject the selected vendor.
+
+Output:
+
+If MD approves the vendor, the process moves forward to SCM to generate the purchase order.
+
+If MD rejects the vendor, the request returns to SCM for an update.
+
+5. If MD Approves Vendor: SCM Finalizes Purchase Order
+Input: SCM receives MD’s approval of the vendor.
+
+Logic:
+
+SCM finalizes the purchase order with the approved vendor's details.
+
+The PO includes: Vendor Name, Vendor ID, Item Description, Purchase Order ID, Date, Quantity, Pricing, and GST.
+
+Output: Purchase Order Created successfully.
+
+6. If MD Rejects Vendor: SCM Updates Request for New Vendor
+Input: SCM receives MD’s rejection of the vendor.
+
+Logic:
+
+SCM updates the request with a new vendor and attaches updated quotations and vendor PDFs.
+
+The updated request is resubmitted to MD for approval.
+
+Output: "MD Review Pending" notification is displayed again.
+
+7. Final Purchase Order Generation
+Input: After MD approval, SCM generates the final purchase order.
+
+Logic:
+
+The PO includes all details: Vendor Info, Item Details, Purchase Order ID, Quantity, Pricing, GST, and Terms & Conditions.
+
+Output: The Purchase Order is created and finalized.
+

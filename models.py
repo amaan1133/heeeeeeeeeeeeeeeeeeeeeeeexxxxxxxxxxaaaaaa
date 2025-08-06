@@ -3,7 +3,7 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 
-# Create a single SQLAlchemy instance that will be initialized later
+
 db = SQLAlchemy()
 
 class User(db.Model):
@@ -13,8 +13,8 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(50), nullable=False, default='User') 
     full_name = db.Column(db.String(100), nullable=False)
-    floor = db.Column(db.String(50))  # GROUND FLOOR IST FLOOR, SECOND FLOOR , 3RD FLOOR , 4TJH FLOOR
-    department = db.Column(db.String(100))  #RADIOLOGY, LAB , OPD , CALL CENTER , ADMIN , ACCCOUNTS , HUMAN RESOURCES , IT , OPERATIONS , RECEPTION , STORE , STAFF WELFARE , WARD , XRAY , OTHERS
+    floor = db.Column(db.String(50))  
+    department = db.Column(db.String(100))  
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
 
@@ -40,10 +40,8 @@ class AssetRequest(db.Model):
 
     status = db.Column(db.String(20), default='Pending') 
     current_approval_level = db.Column(db.Integer, default=1)
-    floor = db.Column(db.String(50))  # Floor WHERE THE REQUEST IS MADE FROM (GROUND FLOOR, FIRST FLOOR, SECOND FLOOR, THIRD FLOOR, FOURTH FLOOR)
+    floor = db.Column(db.String(50))  
     
-
-    # ASSET FULFILLMENT FEILDS (TO BE FILLED BY THE FULLFILLER)
     fulfilled_from_asset_id = db.Column(db.Integer, db.ForeignKey('asset.id'))
     fulfilled_quantity = db.Column(db.Integer, default=0)
     fulfilled_by = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -259,7 +257,7 @@ class AssetMaintenance(db.Model):
 class AssetDepreciation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     asset_id = db.Column(db.Integer, db.ForeignKey('asset.id'), nullable=False)
-    depreciation_method = db.Column(db.String(50), default='Straight Line')  # Straight Line, Declining Balance
+    depreciation_method = db.Column(db.String(50), default='Straight Line') 
     useful_life_years = db.Column(db.Integer, nullable=False)
     salvage_value = db.Column(db.Float, default=0)
     annual_depreciation = db.Column(db.Float, nullable=False)
@@ -298,7 +296,7 @@ class AssetDepreciation(db.Model):
 class WarrantyAlert(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     asset_id = db.Column(db.Integer, db.ForeignKey('asset.id'), nullable=False)
-    alert_type = db.Column(db.String(50), nullable=False)  # Warranty Expiry, Maintenance Due, Depreciation Update
+    alert_type = db.Column(db.String(50), nullable=False)  
     alert_date = db.Column(db.Date, nullable=False)
     message = db.Column(db.Text, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
@@ -319,15 +317,15 @@ class ProcurementQuotation(db.Model):
     quotation_number = db.Column(db.String(100), unique=True, nullable=False)
     quoted_price = db.Column(db.Float, nullable=False)
     quoted_quantity = db.Column(db.Integer, nullable=False)
-    delivery_timeline = db.Column(db.String(100))  # e.g., "7-10 business days"
-    validity_period = db.Column(db.Integer, default=30)  # days
+    delivery_timeline = db.Column(db.String(100))  
+    validity_period = db.Column(db.Integer, default=30)  
     payment_terms = db.Column(db.String(200))
     warranty_period = db.Column(db.String(100))
     specifications = db.Column(db.Text)
-    additional_costs = db.Column(db.Float, default=0)  # shipping, taxes, etc.
+    additional_costs = db.Column(db.Float, default=0)  
     total_cost = db.Column(db.Float, nullable=False)
-    status = db.Column(db.String(50), default='Pending')  # Pending, Approved, Rejected, Expired
-    evaluation_score = db.Column(db.Float)  # 0-100 scoring
+    status = db.Column(db.String(50), default='Pending')  
+    evaluation_score = db.Column(db.Float)  
     evaluation_notes = db.Column(db.Text)
     submitted_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     evaluated_by = db.Column(db.Integer, db.ForeignKey('user.id'))

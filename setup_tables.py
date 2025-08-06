@@ -7,10 +7,8 @@ def setup_missing_tables():
     """Create any missing tables"""
     with app.app_context():
         try:
-            # Create all tables from models
             db.create_all()
             
-            # Check if Bill table exists, if not create it
             inspector = inspect(db.engine)
             existing_tables = inspector.get_table_names()
             

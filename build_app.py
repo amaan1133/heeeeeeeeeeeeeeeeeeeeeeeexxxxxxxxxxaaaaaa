@@ -26,7 +26,6 @@ def create_compiled_executable():
     if os.path.exists('dist'):
         shutil.rmtree('dist')
         print("  Cleaned dist")
-    #Install PyInstaller if not already installed
     try:
         import PyInstaller
     except ImportError:
@@ -89,17 +88,14 @@ def create_app_icon():
     try:
         from PIL import Image, ImageDraw, ImageFont
         
-        # Create a 256x256 icon
         img = Image.new('RGB', (256, 256), color='#2c3e50')
         draw = ImageDraw.Draw(img)
         
-        # Draw a simple medical cross
-        # Horizontal bar
+         
         draw.rectangle([78, 108, 178, 148], fill='white')
-        # Vertical bar  
+         
         draw.rectangle([108, 78, 148, 178], fill='white')
-        
-        # Add text
+
         try:
             font = ImageFont.truetype("arial.ttf", 24)
         except:
@@ -121,14 +117,12 @@ def create_portable_package():
     package_name = f"HexamedAssetManagement_Portable_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     temp_dir = f"temp_{package_name}"
     
-    # Create temporary directory
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
     os.makedirs(temp_dir)
     
     print(f"Creating portable package: {package_name}")
     
-    # Files to include
     files_to_copy = [
         'main.py',
         'app.py', 
@@ -137,36 +131,29 @@ def create_portable_package():
         'requirements.txt'
     ]
     
-    # Directories to include
     dirs_to_copy = [
         'templates',
         'static',
         'uploads'
     ]
     
-    # Copy files
     for file_name in files_to_copy:
         if os.path.exists(file_name):
             shutil.copy2(file_name, temp_dir)
             print(f"  Copied: {file_name}")
     
-    # Copy directories
     for dir_name in dirs_to_copy:
         if os.path.exists(dir_name):
             shutil.copytree(dir_name, os.path.join(temp_dir, dir_name))
             print(f"  Copied: {dir_name}/")
     
-    # Create startup scripts
     create_startup_scripts(temp_dir)
     
-    # Create README
     create_readme(temp_dir)
     
-    # Create ZIP file
     zip_filename = f"{package_name}.zip"
     create_zip(temp_dir, zip_filename)
     
-    # Clean up temp directory
     shutil.rmtree(temp_dir)
     
     print(f"\n✅ Package created successfully: {zip_filename}")
@@ -176,7 +163,6 @@ def create_portable_package():
 def create_startup_scripts(temp_dir):
     """Create startup scripts for different operating systems"""
     
-    # Windows batch file
     windows_script = """@echo off
 echo Starting Hexamed Asset Management System...
 echo.
@@ -212,7 +198,6 @@ pause
     with open(os.path.join(temp_dir, 'start_windows.bat'), 'w') as f:
         f.write(windows_script)
     
-    # Linux/Mac shell script
     unix_script = """#!/bin/bash
 echo "Starting Hexamed Asset Management System..."
 echo
@@ -244,7 +229,6 @@ python3 main.py
     with open(os.path.join(temp_dir, 'start_unix.sh'), 'w') as f:
         f.write(unix_script)
     
-    # Make Unix script executable
     os.chmod(os.path.join(temp_dir, 'start_unix.sh'), 0o755)
 
 def create_readme(temp_dir):
@@ -454,11 +438,9 @@ Created: """ + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + """
     with open(os.path.join(temp_dir, 'README.txt'), 'w') as f:
         f.write(readme_content)
     
-    # Create ZIP file
     zip_filename = f"{package_name}.zip"
     create_zip(temp_dir, zip_filename)
     
-    # Clean up temp directory
     shutil.rmtree(temp_dir)
     
     print(f"\n✅ Standalone package created: {zip_filename}")
@@ -469,12 +451,10 @@ def main():
     print("Hexamed Asset Management System - Build Options")
     print("=" * 60)
     
-    # Option 1: Create compiled executable
     print("\n🔨 Creating compiled executable...")
     exe_path = create_compiled_executable()
     
     if exe_path:
-        # Create standalone package with executable
         standalone_zip = create_standalone_package(exe_path)
         
         print("\n" + "=" * 60)
@@ -486,7 +466,6 @@ def main():
         
     else:
         print("\n⚠️  Compilation failed, creating portable package instead...")
-        # Fallback to portable package
         try:
             zip_file = create_portable_package()
             print(f"\n✅ Portable package created: {zip_file}")

@@ -25,23 +25,18 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production')
 
-# Upload folder configuration
-app.config['UPLOAD_FOLDER'] = upload_folder
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Ensure upload folder exists
+app.config['UPLOAD_FOLDER'] = upload_folder
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  
+
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Import models and initialize database
 from models import db
 
-# Initialize database with app
 db.init_app(app)
 
-# Import routes first
 import routes
 
-# Initialize database tables and default users
 with app.app_context():
     try:
         db.create_all()
@@ -63,7 +58,6 @@ with app.app_context():
             db.session.commit()
             logging.info("Admin user created with username: admin, password: hexamed123")
             
-        # Create an Accounts/SCM user for testing
         accounts_user = User.query.filter_by(username='accounts').first()
         if not accounts_user:
             accounts_user = User()
@@ -78,7 +72,6 @@ with app.app_context():
             db.session.commit()
             logging.info("Accounts user created with username: accounts, password: accounts123")
 
-        # Create sample vendors
         sample_vendors = [
             {
                 'vendor_name': 'TechCorp Solutions',
