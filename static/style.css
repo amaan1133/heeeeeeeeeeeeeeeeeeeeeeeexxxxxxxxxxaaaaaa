@@ -596,10 +596,19 @@ body {
             }
         }
 
-        /* Force navbar to collapse on medium screens */
+        /* Ensure user dropdown is always visible */
+        .navbar-nav .nav-item.dropdown {
+            display: flex !important;
+        }
+
+        /* Keep user name and logout visible on all screens */
         @media (max-width: 1200px) {
-            .navbar-collapse {
+            .navbar-collapse .navbar-nav:first-of-type {
                 display: none !important;
+            }
+            
+            .navbar-collapse .navbar-nav:last-of-type {
+                display: flex !important;
             }
             
             .navbar-toggler {
@@ -609,16 +618,36 @@ body {
 
         /* Ensure navbar container doesn't overflow */
         .navbar .container {
-            overflow: hidden;
+            overflow: visible;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        /* Compress navbar items further */
+        /* Compress navbar items further but keep user dropdown */
         @media (max-width: 1400px) {
-            .navbar-nav {
+            .navbar-nav:first-of-type {
                 gap: 0;
             }
             
-            .navbar-nav .nav-item {
+            .navbar-nav:first-of-type .nav-item {
                 flex-shrink: 1;
             }
+            
+            .navbar-nav:last-of-type {
+                flex-shrink: 0;
+            }
+        }
+
+        /* Make sure user dropdown text doesn't get too small */
+        @media (max-width: 1300px) {
+            .navbar .dropdown-toggle {
+                font-size: 0.85rem !important;
+                max-width: 180px;
+            }
+        }
+
+        /* Always show user section */
+        .navbar-nav:last-of-type {
+            display: flex !important;
         }
