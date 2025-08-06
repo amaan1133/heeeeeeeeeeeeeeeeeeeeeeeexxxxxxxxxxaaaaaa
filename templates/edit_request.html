@@ -57,7 +57,7 @@
                             <label for="urgency" class="form-label">Urgency <span class="text-danger">*</span></label>
                             <select class="form-select" id="urgency" name="urgency" required>
                                 <option value="Low" {{ 'selected' if request.urgency == 'Low' }}>Low</option>
-                                <option value="Normal" {{ 'selected' if request.urgency == 'Normal' }}>Normal</option>
+                                <option value="Normal" {{ 'selected' if request.urgency == 'Normal' }}>Normal</>
                                 <option value="High" {{ 'selected' if request.urgency == 'High' }}>High</option>
                                 <option value="Critical" {{ 'selected' if request.urgency == 'Critical' }}>Critical</option>
                             </select>
