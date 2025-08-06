@@ -16,7 +16,7 @@ else:
     base_path = application_path
     data_path = application_path
 
-os.environ['DATABASE_URL'] = f'sqlite:///{os.path.join(data_path, "hexamed.db")}'
+os.environ['DATABASE_URL'] = 'postgresql://hexamed:OuSKUPQTl0akpyyEBqq0pRHzRliwbwjU@dpg-d29l04mr433s739gju60-a.oregon-postgres.render.com/hexamed'
 os.environ['UPLOAD_FOLDER'] = os.path.join(data_path, 'uploads')
 
 uploads_dir = os.environ['UPLOAD_FOLDER']

@@ -12,11 +12,11 @@ if getattr(sys, 'frozen', False):
     app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
     
     application_path = os.path.dirname(sys.executable)
-    database_url = os.getenv('DATABASE_URL', f'sqlite:///{os.path.join(application_path, "hexamed.db")}')
+    database_url = os.getenv('DATABASE_URL', 'postgresql://hexamed:OuSKUPQTl0akpyyEBqq0pRHzRliwbwjU@dpg-d29l04mr433s739gju60-a.oregon-postgres.render.com/hexamed')
     upload_folder = os.getenv('UPLOAD_FOLDER', os.path.join(application_path, 'uploads'))
 else:
     app = Flask(__name__)
-    database_url = os.getenv('DATABASE_URL', 'sqlite:///hexamed.db')
+    database_url = os.getenv('DATABASE_URL', 'postgresql://hexamed:OuSKUPQTl0akpyyEBqq0pRHzRliwbwjU@dpg-d29l04mr433s739gju60-a.oregon-postgres.render.com/hexamed')
     upload_folder = os.getenv('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'uploads'))
 
 logging.info(f"Database URL: {database_url}")
