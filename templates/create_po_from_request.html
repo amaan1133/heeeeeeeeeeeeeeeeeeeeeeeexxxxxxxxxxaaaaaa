@@ -158,11 +158,19 @@
                         <div class="card mb-4">
                             <div class="card-header">
                                 <h6 class="mb-0 text-warning">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>Specific Item Requirements
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Specific Item Requirements - MD Approval Required
                                 </h6>
                             </div>
                             <div class="card-body">
-                                <p class="text-muted">For specific items, quotations and vendor documents are required for MD approval.</p>
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Specific Item Process:</h6>
+                                    <ol class="mb-0">
+                                        <li>Upload quotations and vendor documents</li>
+                                        <li>PO will be sent to MD for review</li>
+                                        <li>MD will select vendor or reject and request new quotations</li>
+                                        <li>If approved, final PO will be generated</li>
+                                    </ol>
+                                </div>
                                 
                                 <div class="row">
                                     <div class="col-md-6">
@@ -170,17 +178,23 @@
                                             <label for="quotation_files" class="form-label">Quotation Documents *</label>
                                             <input type="file" class="form-control" id="quotation_files" name="quotation_files" 
                                                    multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" required>
-                                            <div class="form-text">Upload vendor quotations (required)</div>
+                                            <div class="form-text text-danger">Multiple quotations from different vendors required</div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="vendor_documents" class="form-label">Vendor Documents</label>
+                                            <label for="vendor_documents" class="form-label">Vendor Documents *</label>
                                             <input type="file" class="form-control" id="vendor_documents" name="vendor_documents" 
-                                                   multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
-                                            <div class="form-text">Upload vendor certificates, brochures, etc.</div>
+                                                   multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" required>
+                                            <div class="form-text">Upload vendor certificates, brochures, catalogs, etc.</div>
                                         </div>
                                     </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="quotation_notes" class="form-label">Quotation Notes</label>
+                                    <textarea class="form-control" id="quotation_notes" name="quotation_notes" rows="3"
+                                              placeholder="Add any notes about the quotations, vendor comparisons, or recommendations for MD review"></textarea>
                                 </div>
                             </div>
                         </div>

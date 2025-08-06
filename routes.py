@@ -1569,12 +1569,18 @@ def classify_item(request_id):
     if request.method == 'POST':
         classification = request.form['classification']  # 'Regular' or 'Specific'
         asset_request.item_classification = classification
+        db.session.commit()  # Save classification to database
+        
+        log_activity(session['user_id'], 'Item Classified', 
+                    f'Classified request #{request_id} as {classification} item')
         
         if classification == 'Regular':
             # For regular items, SCM can directly create PO
+            flash(f'Item classified as Regular. You can now create the purchase order directly.', 'success')
             return redirect(url_for('create_purchase_order_from_request', request_id=request_id))
         else:
-            # For specific items, redirect to create PO with vendor selection
+            # For specific items, redirect to create PO with vendor selection and quotation upload
+            flash(f'Item classified as Specific. Please upload quotations and vendor documents for MD approval.', 'info')
             return redirect(url_for('create_purchase_order_from_request', request_id=request_id, type='specific'))
     
     return render_template('classify_item.html', request=asset_request)
@@ -1686,8 +1692,22 @@ def create_purchase_order():
                     file.save(file_path)
                     vendor_docs.append(filename)
             
-            po.quotation_files = json.dumps(quotation_files) if quotation_files else None
-            po.vendor_documents = json.dumps(vendor_docs) if vendor_docs else None
+            # Validate that required files are uploaded for specific items
+            if not quotation_files:
+                flash('Please upload at least one quotation document for specific items.', 'danger')
+                vendors = Vendor.query.filter_by(is_active=True).order_by(Vendor.vendor_name).all()
+                requests = AssetRequest.query.filter_by(status='Approved').all()
+                return render_template('create_purchase_order.html', vendors=vendors, requests=requests)
+            
+            if not vendor_docs:
+                flash('Please upload at least one vendor document for specific items.', 'danger')
+                vendors = Vendor.query.filter_by(is_active=True).order_by(Vendor.vendor_name).all()
+                requests = AssetRequest.query.filter_by(status='Approved').all()
+                return render_template('create_purchase_order.html', vendors=vendors, requests=requests)
+            
+            po.quotation_files = json.dumps(quotation_files)
+            po.vendor_documents = json.dumps(vendor_docs)
+            po.special_instructions = request.form.get('quotation_notes', '') + '\n' + po.special_instructions
             
         else:  # Regular item
             po.requires_md_approval = False
@@ -1752,19 +1772,22 @@ def md_review_purchase_order(po_id):
             po.approved_at = datetime.utcnow()
             
             log_activity(session['user_id'], 'PO MD Approved', 
-                        f'MD approved purchase order {po.po_number}')
-            flash(f'Purchase order {po.po_number} approved! SCM can now generate the final PO.', 'success')
+                        f'MD approved purchase order {po.po_number} with vendor {po.vendor_name}')
+            flash(f'Purchase order {po.po_number} approved with vendor {po.vendor_name}! SCM can now generate the final PO.', 'success')
         else:
             po.status = 'MD Rejected'
             
             log_activity(session['user_id'], 'PO MD Rejected', 
-                        f'MD rejected purchase order {po.po_number}')
-            flash(f'Purchase order {po.po_number} rejected and returned to SCM for updates.', 'info')
+                        f'MD rejected purchase order {po.po_number} - new quotations required')
+            flash(f'Purchase order {po.po_number} rejected. SCM must upload new quotations and vendor documents.', 'warning')
         
         po.updated_by = session['user_id']
         db.session.commit()
         
         return redirect(url_for('view_purchase_orders'))
+    
+    # Get all active vendors for selection
+    vendors = Vendor.query.filter_by(is_active=True).order_by(Vendor.vendor_name).all()
     
     # Parse file attachments for display
     quotation_files = json.loads(po.quotation_files) if po.quotation_files else []
@@ -1772,6 +1795,7 @@ def md_review_purchase_order(po_id):
     
     return render_template('md_review_po.html', 
                          po=po,
+                         vendors=vendors,
                          quotation_files=quotation_files,
                          vendor_documents=vendor_documents)
 
@@ -1799,9 +1823,12 @@ def update_po_vendor(po_id):
         # Recalculate totals
         po.calculate_totals()
         
-        # Handle new file uploads
-        quotation_files = json.loads(po.quotation_files) if po.quotation_files else []
-        vendor_docs = json.loads(po.vendor_documents) if po.vendor_documents else []
+        # Handle new file uploads - replace old files
+        quotation_files = []
+        vendor_docs = []
+        
+        # Check if user is uploading new files
+        upload_new_files = request.form.get('replace_files') == 'yes'
         
         uploaded_quotations = request.files.getlist('quotation_files')
         for file in uploaded_quotations:
@@ -1819,8 +1846,23 @@ def update_po_vendor(po_id):
                 file.save(file_path)
                 vendor_docs.append(filename)
         
-        po.quotation_files = json.dumps(quotation_files) if quotation_files else None
-        po.vendor_documents = json.dumps(vendor_docs) if vendor_docs else None
+        # If new files uploaded, use them; otherwise keep existing files
+        if quotation_files:
+            po.quotation_files = json.dumps(quotation_files)
+        elif not po.quotation_files:
+            flash('Please upload at least one quotation document.', 'danger')
+            vendors = Vendor.query.filter_by(is_active=True).order_by(Vendor.vendor_name).all()
+            return render_template('update_po_vendor.html', po=po, vendors=vendors)
+            
+        if vendor_docs:
+            po.vendor_documents = json.dumps(vendor_docs)
+        elif not po.vendor_documents:
+            flash('Please upload at least one vendor document.', 'danger')
+            vendors = Vendor.query.filter_by(is_active=True).order_by(Vendor.vendor_name).all()
+            return render_template('update_po_vendor.html', po=po, vendors=vendors)
+        
+        # Add update notes
+        po.special_instructions = po.special_instructions + f'\n\nUpdated after MD rejection: {request.form.get("update_notes", "")}'
         
         # Reset status for MD review
         po.status = 'MD Review Pending'

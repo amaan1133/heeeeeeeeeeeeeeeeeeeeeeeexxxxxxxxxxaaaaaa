@@ -1,0 +1,93 @@
+<!-- MD Rejection Reason -->
+        {% if po.md_comments %}
+        <div class="alert alert-danger">
+            <h6><i class="fas fa-exclamation-triangle me-2"></i>MD Rejection Reason</h6>
+            <p class="mb-0">{{ po.md_comments }}</p>
+        </div>
+        {% endif %}
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="vendor_id" class="form-label">Update Vendor *</label>
+                    <select class="form-select" id="vendor_id" name="vendor_id" required>
+                        <option value="">Choose New Vendor...</option>
+                        {% for vendor in vendors %}
+                        <option value="{{ vendor.id }}" {{ 'selected' if vendor.id == po.vendor_id }}>
+                            {{ vendor.vendor_name }} - {{ vendor.category or 'General' }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="vendor_gst" class="form-label">Vendor GST Number</label>
+                    <input type="text" class="form-control" id="vendor_gst" name="vendor_gst" 
+                           value="{{ po.vendor_gst or '' }}"
+                           placeholder="e.g., 29ABCDE1234F1Z5">
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="unit_price" class="form-label">New Unit Price (₹) *</label>
+                    <input type="number" class="form-control" id="unit_price" name="unit_price" 
+                           value="{{ po.unit_price }}" step="0.01" min="0" required>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="gst_percentage" class="form-label">GST Percentage</label>
+                    <select class="form-select" id="gst_percentage" name="gst_percentage">
+                        <option value="0" {{ 'selected' if po.gst_percentage == 0 }}>0%</option>
+                        <option value="5" {{ 'selected' if po.gst_percentage == 5 }}>5%</option>
+                        <option value="12" {{ 'selected' if po.gst_percentage == 12 }}>12%</option>
+                        <option value="18" {{ 'selected' if po.gst_percentage == 18 }}>18%</option>
+                        <option value="28" {{ 'selected' if po.gst_percentage == 28 }}>28%</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Quotations Upload -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0 text-warning">
+                    <i class="fas fa-upload me-2"></i>Upload New Quotations & Documents
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    As per MD feedback, please upload new quotations and vendor documents for re-review.
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="quotation_files" class="form-label">New Quotation Documents *</label>
+                            <input type="file" class="form-control" id="quotation_files" name="quotation_files" 
+                                   multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" required>
+                            <div class="form-text">Upload updated quotations from vendors</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="vendor_documents" class="form-label">New Vendor Documents *</label>
+                            <input type="file" class="form-control" id="vendor_documents" name="vendor_documents" 
+                                   multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" required>
+                            <div class="form-text">Upload updated vendor certificates, brochures, etc.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="update_notes" class="form-label">Update Notes</label>
+                    <textarea class="form-control" id="update_notes" name="update_notes" rows="3"
+                              placeholder="Explain the changes made based on MD feedback"></textarea>
+                </div>
+            </div>
+        </div>

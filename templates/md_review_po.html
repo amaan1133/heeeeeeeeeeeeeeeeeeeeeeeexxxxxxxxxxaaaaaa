@@ -1,0 +1,224 @@
+
+{% extends "base.html" %}
+
+{% block title %}MD Review - Purchase Order {{ po.po_number }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0 text-warning">
+                        <i class="fas fa-user-tie me-2"></i>MD Review Required - Purchase Order {{ po.po_number }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Request Information -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">Request Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Request ID:</strong> #{{ po.request.id }}<br>
+                                    <strong>Item:</strong> {{ po.item_name }}<br>
+                                    <strong>Quantity:</strong> {{ po.quantity }}<br>
+                                    <strong>Estimated Cost:</strong> ₹{{ "%.2f"|format(po.request.estimated_cost) if po.request.estimated_cost else 'Not specified' }}<br>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Requester:</strong> {{ po.request.requester.full_name }}<br>
+                                    <strong>Department:</strong> {{ po.request.requester.department }}<br>
+                                    <strong>Urgency:</strong> {{ po.request.urgency }}<br>
+                                    <strong>Created By SCM:</strong> {{ po.creator.full_name }}<br>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current PO Details -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">Current Purchase Order Details</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>PO Number:</strong> {{ po.po_number }}<br>
+                                    <strong>Vendor:</strong> {{ po.vendor_name }}<br>
+                                    <strong>Unit Price:</strong> ₹{{ "%.2f"|format(po.unit_price) }}<br>
+                                    <strong>GST ({{ po.gst_percentage }}%):</strong> ₹{{ "%.2f"|format(po.gst_amount) }}<br>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Total Amount:</strong> ₹{{ "%.2f"|format(po.total_amount) }}<br>
+                                    <strong>Grand Total:</strong> ₹{{ "%.2f"|format(po.grand_total) }}<br>
+                                    <strong>Payment Terms:</strong> {{ po.payment_terms }}<br>
+                                    <strong>Expected Delivery:</strong> {{ po.expected_delivery_date.strftime('%d/%m/%Y') if po.expected_delivery_date else 'Not specified' }}<br>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quotation Files -->
+                    {% if quotation_files %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0 text-primary">
+                                <i class="fas fa-file-pdf me-2"></i>Quotation Documents
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for file in quotation_files %}
+                                <div class="col-md-4 mb-2">
+                                    <a href="{{ url_for('uploaded_file', filename=file) }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-file-pdf me-1"></i>Quotation {{ loop.index }}
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Vendor Documents -->
+                    {% if vendor_documents %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0 text-info">
+                                <i class="fas fa-folder-open me-2"></i>Vendor Documents
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for file in vendor_documents %}
+                                <div class="col-md-4 mb-2">
+                                    <a href="{{ url_for('uploaded_file', filename=file) }}" target="_blank" class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-file me-1"></i>Document {{ loop.index }}
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Vendor Selection -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0 text-success">
+                                <i class="fas fa-truck me-2"></i>Available Vendors
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Vendor Name</th>
+                                            <th>Category</th>
+                                            <th>Contact Person</th>
+                                            <th>Payment Terms</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for vendor in vendors %}
+                                        <tr class="{{ 'table-warning' if vendor.id == po.vendor_id else '' }}">
+                                            <td>
+                                                <strong>{{ vendor.vendor_name }}</strong>
+                                                {% if vendor.id == po.vendor_id %}
+                                                <span class="badge bg-warning ms-2">Current Selection</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ vendor.category or '-' }}</td>
+                                            <td>{{ vendor.contact_person or '-' }}</td>
+                                            <td>{{ vendor.payment_terms or '-' }}</td>
+                                            <td>
+                                                {% if vendor.id == po.vendor_id %}
+                                                <span class="badge bg-warning">Selected</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MD Review Form -->
+                    <form method="POST">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0 text-danger">
+                                    <i class="fas fa-gavel me-2"></i>MD Decision
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Decision *</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card border-success">
+                                                <div class="card-body text-center">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="action" 
+                                                               id="approve" value="approve" required>
+                                                        <label class="form-check-label" for="approve">
+                                                            <h6 class="text-success">
+                                                                <i class="fas fa-check-circle me-1"></i>Approve Current Vendor & PO
+                                                            </h6>
+                                                        </label>
+                                                    </div>
+                                                    <p class="small text-muted mb-0">
+                                                        Approve the current vendor selection and allow SCM to generate final PO
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card border-danger">
+                                                <div class="card-body text-center">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="action" 
+                                                               id="reject" value="reject" required>
+                                                        <label class="form-check-label" for="reject">
+                                                            <h6 class="text-danger">
+                                                                <i class="fas fa-times-circle me-1"></i>Request New Quotations
+                                                            </h6>
+                                                        </label>
+                                                    </div>
+                                                    <p class="small text-muted mb-0">
+                                                        Reject current selection and request SCM to provide new quotations
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="comments" class="form-label">Comments</label>
+                                    <textarea class="form-control" id="comments" name="comments" rows="3"
+                                              placeholder="Add your comments, reasons for approval/rejection, or specific instructions for SCM"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_purchase_orders') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to PO List
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-gavel me-1"></i>Submit MD Decision
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
