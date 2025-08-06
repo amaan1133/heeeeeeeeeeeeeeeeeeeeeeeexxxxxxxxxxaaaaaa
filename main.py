@@ -320,11 +320,9 @@ try:
                         )
                     """))
                 
-                # Check and add missing columns to purchase_order table
                 if 'purchase_order' in existing_tables:
                     po_columns = [col['name'] for col in inspector.get_columns('purchase_order')]
 
-                    # Add missing columns one by one
                     if 'delivery_address' not in po_columns:
                         print("Adding delivery_address column to purchase_order table...")
                         db.session.execute(text("ALTER TABLE purchase_order ADD COLUMN delivery_address TEXT"))
@@ -360,7 +358,7 @@ try:
                     db.session.commit()
 
                 elif 'purchase_order' not in existing_tables:
-                    pass # This condition seems redundant after checking 'purchase_order' in existing_tables, but kept for structural integrity as per the provided change snippet.
+                    pass 
 
                 db.session.commit()
                 print("Database migration completed successfully!")

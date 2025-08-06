@@ -204,17 +204,15 @@
                     <p class="mb-0">Streamlining asset and procurement processes</p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <small>&copy; 2024 Hexamed. All rights reserved.</small><br>
+                    <small>&copy; 2025 Hexamed. All rights reserved.</small><br>
                     <small class="text-muted">Designed and developed by Amaan Farooq</small>
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Working Hamburger Menu Script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const toggler = document.querySelector('.navbar-toggler');
@@ -237,7 +235,6 @@
                     }
                 });
 
-                // Close menu when clicking nav links (except dropdown toggles)
                 const navLinks = document.querySelectorAll('.navbar-collapse .nav-link:not(.dropdown-toggle)');
                 navLinks.forEach(link => {
                     link.addEventListener('click', function() {
@@ -247,7 +244,6 @@
                     });
                 });
 
-                // Close menu when clicking outside
                 document.addEventListener('click', function(e) {
                     if (!collapse.contains(e.target) && !toggler.contains(e.target)) {
                         collapse.classList.remove('show');
@@ -256,7 +252,6 @@
                     }
                 });
 
-                // Close menu when clicking logout button
                 const logoutButton = document.querySelector('.logout-mobile');
                 if (logoutButton) {
                     logoutButton.addEventListener('click', function() {
@@ -269,9 +264,7 @@
         });
     </script>
 
-    <!-- Global Search JavaScript for Navbar -->
     <script>
-    // Desktop search functionality (if exists)
     if (document.getElementById('navSearch')) {
         let navSearchTimeout;
         const navSearchInput = document.getElementById('navSearch');
@@ -348,7 +341,6 @@
             navSearchResults.style.display = 'block';
         }
 
-        // Event listeners for navbar search
         navSearchInput.addEventListener('input', function() {
             clearTimeout(navSearchTimeout);
             navSearchTimeout = setTimeout(performNavSearch, 300);
@@ -369,7 +361,6 @@
             }
         });
 
-        // Hide navbar search results when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('#navSearch') && !e.target.closest('#navSearchResults')) {
                 navSearchResults.style.display = 'none';
@@ -377,7 +368,6 @@
         });
     }
 
-    // Mobile search functionality
     if (document.getElementById('navSearchMobile')) {
         let navSearchTimeoutMobile;
         const navSearchInputMobile = document.getElementById('navSearchMobile');
@@ -454,7 +444,6 @@
             navSearchResultsMobile.style.display = 'block';
         }
 
-        // Event listeners for mobile search
         navSearchInputMobile.addEventListener('input', function() {
             clearTimeout(navSearchTimeoutMobile);
             navSearchTimeoutMobile = setTimeout(performNavSearchMobile, 300);
@@ -475,7 +464,6 @@
             }
         });
 
-        // Hide mobile search results when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('#navSearchMobile') && !e.target.closest('#navSearchResultsMobile')) {
                 navSearchResultsMobile.style.display = 'none';

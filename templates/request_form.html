@@ -13,7 +13,6 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data">
-                        <!-- Request Type Selection -->
                         <div class="mb-4">
                             <div class="form-check form-check-inline">
                                 <input class="form-check-input" type="radio" name="entry_type" id="single_entry" value="single" checked onchange="toggleEntryType()">
@@ -29,7 +28,6 @@
                             </div>
                         </div>
 
-                        <!-- Single Item Form -->
                         <div id="single_item_form">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -137,7 +135,6 @@
                 </div>
             </div>
             
-            <!-- Information Panel -->
             <div class="card mt-4">
                 <div class="card-body">
                     <h6><i class="fas fa-info-circle"></i> Approval Process</h6>
@@ -196,11 +193,9 @@ function toggleEntryType() {
         bulkForm.style.display = 'none';
         singleCostField.style.display = 'block';
         
-        // Make single fields required
         document.getElementById('item_name').required = true;
         document.getElementById('quantity').required = true;
         
-        // Remove required from bulk fields
         const bulkInputs = bulkForm.querySelectorAll('input');
         bulkInputs.forEach(input => input.required = false);
     } else {
@@ -208,7 +203,6 @@ function toggleEntryType() {
         bulkForm.style.display = 'block';
         singleCostField.style.display = 'none';
         
-        // Remove required from single fields
         document.getElementById('item_name').required = false;
         document.getElementById('quantity').required = false;
     }
@@ -218,7 +212,6 @@ function addBulkRow() {
     const tbody = document.getElementById('bulk_items_tbody');
     const newRow = tbody.rows[0].cloneNode(true);
     
-    // Clear input values
     const inputs = newRow.querySelectorAll('input');
     inputs.forEach(input => input.value = '');
     
@@ -232,7 +225,6 @@ function removeBulkRow(button) {
     }
 }
 
-// File upload preview
 document.getElementById('files').addEventListener('change', function(e) {
     const files = e.target.files;
     if (files.length > 0) {
