@@ -1,4 +1,3 @@
-
 import os
 import sys
 import logging
@@ -49,13 +48,13 @@ try:
                 asset_request_columns = [col['name'] for col in inspector.get_columns('asset_request')]
 
                 migrations = []
-                
+
                 if 'is_bulk_request' not in asset_request_columns:
                     migrations.append('ALTER TABLE asset_request ADD COLUMN is_bulk_request BOOLEAN DEFAULT 0')
-                    
+
                 if 'bulk_items' not in asset_request_columns:
                     migrations.append('ALTER TABLE asset_request ADD COLUMN bulk_items TEXT')
-                    
+
                 if 'item_classification' not in asset_request_columns:
                     migrations.append('ALTER TABLE asset_request ADD COLUMN item_classification VARCHAR(20)')
 
@@ -64,40 +63,40 @@ try:
 
                 if 'fulfilled_from_asset_id' not in asset_request_columns:
                     migrations.append('ALTER TABLE asset_request ADD COLUMN fulfilled_from_asset_id INTEGER')
-                    
+
                 if 'fulfilled_quantity' not in asset_request_columns:
                     migrations.append('ALTER TABLE asset_request ADD COLUMN fulfilled_quantity INTEGER DEFAULT 0')
-                    
+
                 if 'fulfilled_by' not in asset_request_columns:
                     migrations.append('ALTER TABLE asset_request ADD COLUMN fulfilled_by INTEGER')
-                    
+
                 if 'fulfilled_at' not in asset_request_columns:
                     migrations.append('ALTER TABLE asset_request ADD COLUMN fulfilled_at TIMESTAMP')
-                    
+
                 if 'fulfillment_notes' not in asset_request_columns:
                     migrations.append('ALTER TABLE asset_request ADD COLUMN fulfillment_notes TEXT')
 
                 # Check and add missing columns to user table
                 user_columns = [col['name'] for col in inspector.get_columns('user')]
-                
+
                 if 'floor' not in user_columns:
                     migrations.append('ALTER TABLE user ADD COLUMN floor VARCHAR(50)')
-                    
+
                 if 'department' not in user_columns:
                     migrations.append('ALTER TABLE user ADD COLUMN department VARCHAR(100)')
 
                 # Check and add missing columns to asset table
                 asset_columns = [col['name'] for col in inspector.get_columns('asset')]
-                
+
                 if 'asset_type' not in asset_columns:
                     migrations.append("ALTER TABLE asset ADD COLUMN asset_type VARCHAR(50) DEFAULT 'Fixed Asset'")
-                    
+
                 if 'current_quantity' not in asset_columns:
                     migrations.append('ALTER TABLE asset ADD COLUMN current_quantity INTEGER DEFAULT 1')
-                    
+
                 if 'minimum_threshold' not in asset_columns:
                     migrations.append('ALTER TABLE asset ADD COLUMN minimum_threshold INTEGER DEFAULT 5')
-                    
+
                 if 'unit_of_measurement' not in asset_columns:
                     migrations.append("ALTER TABLE asset ADD COLUMN unit_of_measurement VARCHAR(50) DEFAULT 'Piece'")
 
@@ -112,7 +111,7 @@ try:
 
                 # Create missing tables if they don't exist
                 existing_tables = inspector.get_table_names()
-                
+
                 if 'bill' not in existing_tables:
                     print("Creating bill table...")
                     db.session.execute(text("""
@@ -320,6 +319,48 @@ try:
                             expected_delivery_date DATE
                         )
                     """))
+                
+                # Check and add missing columns to purchase_order table
+                if 'purchase_order' in existing_tables:
+                    po_columns = [col['name'] for col in inspector.get_columns('purchase_order')]
+
+                    # Add missing columns one by one
+                    if 'delivery_address' not in po_columns:
+                        print("Adding delivery_address column to purchase_order table...")
+                        db.session.execute(text("ALTER TABLE purchase_order ADD COLUMN delivery_address TEXT"))
+
+                    if 'vendor_address' not in po_columns:
+                        print("Adding vendor_address column to purchase_order table...")
+                        db.session.execute(text("ALTER TABLE purchase_order ADD COLUMN vendor_address TEXT"))
+
+                    if 'vendor_gst' not in po_columns:
+                        print("Adding vendor_gst column to purchase_order table...")
+                        db.session.execute(text("ALTER TABLE purchase_order ADD COLUMN vendor_gst VARCHAR(50)"))
+
+                    if 'delivery_terms' not in po_columns:
+                        print("Adding delivery_terms column to purchase_order table...")
+                        db.session.execute(text("ALTER TABLE purchase_order ADD COLUMN delivery_terms VARCHAR(200)"))
+
+                    if 'warranty_terms' not in po_columns:
+                        print("Adding warranty_terms column to purchase_order table...")
+                        db.session.execute(text("ALTER TABLE purchase_order ADD COLUMN warranty_terms TEXT"))
+
+                    if 'special_instructions' not in po_columns:
+                        print("Adding special_instructions column to purchase_order table...")
+                        db.session.execute(text("ALTER TABLE purchase_order ADD COLUMN special_instructions TEXT"))
+
+                    if 'quotation_files' not in po_columns:
+                        print("Adding quotation_files column to purchase_order table...")
+                        db.session.execute(text("ALTER TABLE purchase_order ADD COLUMN quotation_files TEXT"))
+
+                    if 'vendor_documents' not in po_columns:
+                        print("Adding vendor_documents column to purchase_order table...")
+                        db.session.execute(text("ALTER TABLE purchase_order ADD COLUMN vendor_documents TEXT"))
+
+                    db.session.commit()
+
+                elif 'purchase_order' not in existing_tables:
+                    pass # This condition seems redundant after checking 'purchase_order' in existing_tables, but kept for structural integrity as per the provided change snippet.
 
                 db.session.commit()
                 print("Database migration completed successfully!")

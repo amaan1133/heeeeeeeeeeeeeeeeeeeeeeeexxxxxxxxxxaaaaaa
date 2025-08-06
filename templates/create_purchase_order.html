@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block title %}Create Purchase Order - Hexamed{% endblock %}
@@ -135,11 +134,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="delivery_address" class="form-label">Delivery Address</label>
-                                <textarea class="form-control" id="delivery_address" name="delivery_address" rows="3" 
-                                          placeholder="# 302, Main Bye-Pass Road, NH-1A, Channi Himat
-JAMMU
-Jammu Jammu and Kashmir 180015
-India">Hexamed Technologies (I) Pvt Ltd.
+                                <textarea class="form-control" id="delivery_address" name="delivery_address" rows="3" placeholder="Enter delivery address">Hexamed Technologies (I) Pvt Ltd.
 # 302, Main Bye-Pass Road, NH-1A, Channi Himat
 JAMMU
 Jammu Jammu and Kashmir 180015
@@ -186,7 +181,7 @@ scm_jammu@hexamedhealthcare.com</textarea>
                         <div id="specific_item_files" style="display: none;">
                             <hr>
                             <h6 class="text-warning"><i class="fas fa-paperclip me-2"></i>Required Documents for Specific Items</h6>
-                            
+
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label for="quotation_files" class="form-label">Quotation Files *</label>
@@ -224,7 +219,7 @@ function toggleApprovalRequirement() {
     const specificFiles = document.getElementById('specific_item_files');
     const submitText = document.getElementById('submit_text');
     const quotationFiles = document.getElementById('quotation_files');
-    
+
     if (specificType) {
         specificFiles.style.display = 'block';
         submitText.textContent = 'Submit for MD Review';
@@ -236,19 +231,21 @@ function toggleApprovalRequirement() {
     }
 }
 
+// Auto-populate vendor details when vendor is selected
 function updateVendorDetails() {
     const vendorSelect = document.getElementById('vendor_id');
     const selectedOption = vendorSelect.options[vendorSelect.selectedIndex];
-    
+
     if (selectedOption.value) {
-        document.getElementById('payment_terms').value = selectedOption.dataset.paymentTerms;
+        document.getElementById('payment_terms').value = selectedOption.dataset.paymentTerms || 'Net 30 days';
+        document.getElementById('vendor_address').value = selectedOption.dataset.address || '';
     }
 }
 
 function handleGstSelection() {
     const gstSelect = document.getElementById('gst_select');
     const gstInput = document.getElementById('gst_percentage');
-    
+
     if (gstSelect.value === 'custom') {
         gstSelect.style.display = 'none';
         gstInput.style.display = 'block';
@@ -262,28 +259,17 @@ function handleGstSelection() {
     }
 }
 
-// Auto-populate vendor details when vendor is selected
-function updateVendorDetails() {
-    const vendorSelect = document.getElementById('vendor_id');
-    const selectedOption = vendorSelect.options[vendorSelect.selectedIndex];
-    
-    if (selectedOption.value) {
-        document.getElementById('payment_terms').value = selectedOption.dataset.paymentTerms || 'Net 30 days';
-        document.getElementById('vendor_address').value = selectedOption.dataset.address || '';
-    }
-}
-
 function calculateTotals() {
     const quantity = parseFloat(document.getElementById('quantity').value) || 0;
     const unitPrice = parseFloat(document.getElementById('unit_price').value) || 0;
     const gstPercentage = parseFloat(document.getElementById('gst_percentage').value) || 0;
-    
+
     const totalAmount = quantity * unitPrice;
     const gstAmount = (totalAmount * gstPercentage) / 100;
     const grandTotal = totalAmount + gstAmount;
-    
+
     document.getElementById('grand_total').value = grandTotal.toFixed(2);
-    
+
     // Show breakdown in a small info box
     const breakdown = `
         <small class="text-muted">
@@ -292,7 +278,7 @@ function calculateTotals() {
             Total: ₹${grandTotal.toFixed(2)}
         </small>
     `;
-    
+
     // Add breakdown display if it doesn't exist
     let breakdownDiv = document.getElementById('price-breakdown');
     if (!breakdownDiv) {
@@ -308,13 +294,13 @@ function calculateTotals() {
 document.getElementById('gst_percentage').addEventListener('blur', function() {
     const gstSelect = document.getElementById('gst_select');
     const gstInput = document.getElementById('gst_percentage');
-    
+
     if (gstInput.value === '' || gstInput.value === '0') {
         gstSelect.selectedIndex = 0; // 0% GST
     } else if (['5', '12', '18', '28'].includes(gstInput.value)) {
         gstSelect.selectedIndex = ['5', '12', '18', '28'].indexOf(gstInput.value) + 1;
     }
-    
+
     // If user entered a standard value, show dropdown again
     if (['0', '5', '12', '18', '28'].includes(gstInput.value)) {
         gstSelect.style.display = 'block';
@@ -324,5 +310,12 @@ document.getElementById('gst_percentage').addEventListener('blur', function() {
 
 // Auto-calculate when quantity changes
 document.getElementById('quantity').addEventListener('input', calculateTotals);
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleApprovalRequirement(); // Ensure initial state is correct
+    updateVendorDetails(); // Ensure initial vendor details are populated if a default is set
+    calculateTotals(); // Calculate totals on initial load
+});
 </script>
 {% endblock %}
