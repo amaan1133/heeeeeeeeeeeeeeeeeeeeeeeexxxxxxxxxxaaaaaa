@@ -2485,6 +2485,20 @@ def update_po_vendor(po_id):
     vendors = Vendor.query.filter_by(is_active=True).all()
     return render_template('update_po_vendor.html', po=po, vendors=vendors)
 
+@app.route('/purchase-order/<int:po_id>/update-status', methods=['POST'])
+@require_role(['Accounts/SCM', 'Admin'])
+def update_po_status(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    
+    po.po_status = request.form['po_status']
+    po.updated_by = session['user_id']
+    db.session.commit()
+    
+    log_activity(session['user_id'], 'PO Status Updated', 
+                f'Updated PO {po.po_number} status to {po.po_status}')
+    flash('Purchase order status updated successfully!', 'success')
+    return redirect(url_for('view_purchase_order_detail', po_id=po_id))
+
 @app.route('/create-po-from-request/<int:request_id>', methods=['GET', 'POST'])
 @require_role(['Accounts/SCM'])
 def create_po_from_request(request_id):
