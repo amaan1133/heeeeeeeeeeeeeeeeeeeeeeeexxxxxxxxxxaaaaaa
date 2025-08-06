@@ -268,6 +268,18 @@
                             dropdownToggle.setAttribute('aria-expanded', 'false');
                         }
                     });
+                    
+                    // Close main menu when clicking on dropdown items
+                    const dropdownItems = dropdownMenu.querySelectorAll('.dropdown-item');
+                    dropdownItems.forEach(item => {
+                        item.addEventListener('click', function() {
+                            collapse.classList.remove('show');
+                            toggler.setAttribute('aria-expanded', 'false');
+                            toggler.classList.remove('collapsed');
+                            dropdownMenu.classList.remove('show');
+                            dropdownToggle.setAttribute('aria-expanded', 'false');
+                        });
+                    });
                 }
             }
         });
