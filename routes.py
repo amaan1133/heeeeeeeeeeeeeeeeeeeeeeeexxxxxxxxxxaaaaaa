@@ -2293,6 +2293,190 @@ def delete_all_data():
         flash(f'Error deleting data: {str(e)}', 'danger')
         return redirect(url_for('admin_panel'))
 
+# Purchase Order Routes
+@app.route('/purchase-orders')
+@require_role(['Admin', 'MD', 'Accounts/SCM'])
+def view_purchase_orders():
+    page = request.args.get('page', 1, type=int)
+    status = request.args.get('status', '')
+    po_type = request.args.get('type', '')
+
+    query = PurchaseOrder.query
+    if status:
+        query = query.filter_by(status=status)
+    if po_type:
+        query = query.filter_by(item_type=po_type)
+
+    purchase_orders = query.order_by(PurchaseOrder.created_at.desc()).paginate(
+        page=page, per_page=15, error_out=False)
+
+    user = User.query.get(session['user_id'])
+    return render_template('purchase_orders.html', 
+                         purchase_orders=purchase_orders,
+                         selected_status=status,
+                         selected_type=po_type,
+                         user=user)
+
+@app.route('/purchase-order/create', methods=['GET', 'POST'])
+@require_role(['Accounts/SCM'])
+def create_purchase_order():
+    if request.method == 'POST':
+        po = PurchaseOrder()
+        po.item_type = request.form['item_type']
+        po.item_name = request.form['item_name']
+        po.item_description = request.form.get('item_description', '')
+        po.quantity = int(request.form['quantity'])
+        po.unit_price = float(request.form['unit_price'])
+        po.vendor_id = int(request.form['vendor_id'])
+        po.vendor_name = request.form['vendor_name']
+        po.payment_terms = request.form.get('payment_terms', 'Net 30 days')
+        po.delivery_terms = request.form.get('delivery_terms', '')
+        po.warranty_terms = request.form.get('warranty_terms', '')
+        po.special_instructions = request.form.get('special_instructions', '')
+        po.created_by = session['user_id']
+        
+        # Generate PO number and calculate totals
+        po.generate_po_number()
+        po.calculate_totals()
+        
+        # Check if MD approval required for Specific items
+        if po.item_type == 'Specific':
+            po.requires_md_approval = True
+            po.status = 'MD Review Pending'
+        else:
+            po.status = 'Approved'
+
+        db.session.add(po)
+        db.session.commit()
+
+        log_activity(session['user_id'], 'PO Created', f'Created purchase order {po.po_number}')
+        flash('Purchase order created successfully!', 'success')
+        return redirect(url_for('view_purchase_orders'))
+
+    vendors = Vendor.query.filter_by(is_active=True).all()
+    return render_template('create_purchase_order.html', vendors=vendors)
+
+@app.route('/purchase-order/<int:po_id>')
+@require_login
+def view_purchase_order_detail(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    user = User.query.get(session['user_id'])
+    return render_template('purchase_order_detail.html', po=po, user=user)
+
+@app.route('/purchase-order/<int:po_id>/md-review', methods=['GET', 'POST'])
+@require_role(['MD'])
+def md_review_purchase_order(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    
+    if request.method == 'POST':
+        action = request.form['action']
+        po.md_comments = request.form.get('comments', '')
+        po.approved_by_md = session['user_id']
+        po.approved_at = datetime.utcnow()
+        
+        if action == 'approve':
+            po.md_approved = True
+            po.status = 'Approved'
+        else:
+            po.md_approved = False
+            po.status = 'MD Rejected'
+            
+        db.session.commit()
+        
+        log_activity(session['user_id'], f'PO {action.title()}d by MD', 
+                    f'{action.title()}d purchase order {po.po_number}')
+        flash(f'Purchase order {action}d successfully!', 'success')
+        return redirect(url_for('view_purchase_orders'))
+    
+    return render_template('md_review_po.html', po=po)
+
+@app.route('/purchase-order/<int:po_id>/generate-final', methods=['POST'])
+@require_role(['Accounts/SCM'])
+def generate_final_purchase_order(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    
+    if po.status != 'Approved':
+        flash('Only approved purchase orders can be finalized.', 'warning')
+        return redirect(url_for('view_purchase_orders'))
+    
+    po.status = 'Generated'
+    po.updated_by = session['user_id']
+    db.session.commit()
+    
+    log_activity(session['user_id'], 'Final PO Generated', 
+                f'Generated final purchase order {po.po_number}')
+    flash('Final purchase order generated successfully!', 'success')
+    return redirect(url_for('view_purchase_orders'))
+
+@app.route('/purchase-order/<int:po_id>/print')
+@require_login
+def print_purchase_order(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    return render_template('print_purchase_order.html', po=po)
+
+@app.route('/purchase-order/<int:po_id>/update-vendor', methods=['GET', 'POST'])
+@require_role(['Accounts/SCM'])
+def update_po_vendor(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    
+    if request.method == 'POST':
+        po.vendor_id = int(request.form['vendor_id'])
+        vendor = Vendor.query.get(po.vendor_id)
+        po.vendor_name = vendor.vendor_name
+        po.unit_price = float(request.form['unit_price'])
+        po.calculate_totals()
+        po.status = 'MD Review Pending'  # Send back to MD for re-approval
+        po.updated_by = session['user_id']
+        
+        db.session.commit()
+        
+        log_activity(session['user_id'], 'PO Vendor Updated', 
+                    f'Updated vendor for purchase order {po.po_number}')
+        flash('Purchase order updated and sent for MD review!', 'success')
+        return redirect(url_for('view_purchase_orders'))
+    
+    vendors = Vendor.query.filter_by(is_active=True).all()
+    return render_template('update_po_vendor.html', po=po, vendors=vendors)
+
+@app.route('/create-po-from-request/<int:request_id>', methods=['GET', 'POST'])
+@require_role(['Accounts/SCM'])
+def create_po_from_request(request_id):
+    asset_request = AssetRequest.query.get_or_404(request_id)
+    
+    if request.method == 'POST':
+        po = PurchaseOrder()
+        po.request_id = request_id
+        po.item_type = request.form['item_type']
+        po.item_name = asset_request.item_name
+        po.item_description = request.form.get('item_description', '')
+        po.quantity = asset_request.quantity
+        po.unit_price = float(request.form['unit_price'])
+        po.vendor_id = int(request.form['vendor_id'])
+        vendor = Vendor.query.get(po.vendor_id)
+        po.vendor_name = vendor.vendor_name
+        po.payment_terms = request.form.get('payment_terms', 'Net 30 days')
+        po.created_by = session['user_id']
+        
+        po.generate_po_number()
+        po.calculate_totals()
+        
+        if po.item_type == 'Specific':
+            po.requires_md_approval = True
+            po.status = 'MD Review Pending'
+        else:
+            po.status = 'Approved'
+
+        db.session.add(po)
+        db.session.commit()
+
+        log_activity(session['user_id'], 'PO Created from Request', 
+                    f'Created purchase order {po.po_number} from request #{request_id}')
+        flash('Purchase order created from request successfully!', 'success')
+        return redirect(url_for('view_purchase_orders'))
+
+    vendors = Vendor.query.filter_by(is_active=True).all()
+    return render_template('create_po_from_request.html', request=asset_request, vendors=vendors)
+
 @app.errorhandler(500)
 def internal_error(error):
     db.session.rollback()
