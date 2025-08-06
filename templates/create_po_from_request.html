@@ -1,0 +1,232 @@
+
+{% extends "base.html" %}
+
+{% block title %}Create Purchase Order - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>Create Purchase Order
+                        <span class="badge bg-{{ 'success' if request.item_classification == 'Regular' else 'warning' }} ms-2">
+                            {{ request.item_classification }} Item
+                        </span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" action="{{ url_for('create_purchase_order') }}">
+                        <input type="hidden" name="source_request_id" value="{{ request.id }}">
+                        <input type="hidden" name="item_type" value="{{ request.item_classification }}">
+                        
+                        <!-- Request Information -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">Request Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Request ID:</strong> #{{ request.id }}<br>
+                                        <strong>Requester:</strong> {{ request.requester.full_name }}<br>
+                                        <strong>Department:</strong> {{ request.requester.department }}<br>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Request Type:</strong> {{ request.request_type }}<br>
+                                        <strong>Urgency:</strong> {{ request.urgency }}<br>
+                                        <strong>Created:</strong> {{ request.created_at.strftime('%d/%m/%Y') }}<br>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Item Details -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="item_name" class="form-label">Item Name/Description *</label>
+                                    <input type="text" class="form-control" id="item_name" name="item_name" 
+                                           value="{{ request.item_name }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quantity" class="form-label">Quantity *</label>
+                                    <input type="number" class="form-control" id="quantity" name="quantity" 
+                                           value="{{ request.quantity }}" min="1" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="item_description" class="form-label">Detailed Item Description</label>
+                            <textarea class="form-control" id="item_description" name="item_description" rows="3"
+                                      placeholder="Enter detailed specifications, requirements, etc.">{{ request.purpose }}</textarea>
+                        </div>
+
+                        <!-- Vendor Selection -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="vendor_id" class="form-label">Select Vendor *</label>
+                                    <select class="form-select" id="vendor_id" name="vendor_id" required>
+                                        <option value="">Choose Vendor...</option>
+                                        {% for vendor in vendors %}
+                                        <option value="{{ vendor.id }}">{{ vendor.vendor_name }} - {{ vendor.category or 'General' }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="vendor_gst" class="form-label">Vendor GST Number</label>
+                                    <input type="text" class="form-control" id="vendor_gst" name="vendor_gst" 
+                                           placeholder="e.g., 29ABCDE1234F1Z5">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pricing Details -->
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="unit_price" class="form-label">Unit Price (₹) *</label>
+                                    <input type="number" class="form-control" id="unit_price" name="unit_price" 
+                                           step="0.01" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="gst_percentage" class="form-label">GST Percentage</label>
+                                    <select class="form-select" id="gst_percentage" name="gst_percentage">
+                                        <option value="0">0%</option>
+                                        <option value="5">5%</option>
+                                        <option value="12">12%</option>
+                                        <option value="18" selected>18%</option>
+                                        <option value="28">28%</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="expected_delivery_date" class="form-label">Expected Delivery Date</label>
+                                    <input type="date" class="form-control" id="expected_delivery_date" name="expected_delivery_date">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="payment_terms" class="form-label">Payment Terms</label>
+                                    <select class="form-select" id="payment_terms" name="payment_terms">
+                                        <option value="Net 30 days" selected>Net 30 days</option>
+                                        <option value="Net 15 days">Net 15 days</option>
+                                        <option value="Advance Payment">Advance Payment</option>
+                                        <option value="Cash on Delivery">Cash on Delivery</option>
+                                        <option value="Net 45 days">Net 45 days</option>
+                                        <option value="Net 60 days">Net 60 days</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="delivery_terms" class="form-label">Delivery Terms</label>
+                                    <input type="text" class="form-control" id="delivery_terms" name="delivery_terms" 
+                                           placeholder="e.g., Free delivery to site">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="warranty_terms" class="form-label">Warranty Terms</label>
+                            <textarea class="form-control" id="warranty_terms" name="warranty_terms" rows="2"
+                                      placeholder="Enter warranty details if applicable"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="special_instructions" class="form-label">Special Instructions</label>
+                            <textarea class="form-control" id="special_instructions" name="special_instructions" rows="2"
+                                      placeholder="Any special delivery or handling instructions"></textarea>
+                        </div>
+
+                        <!-- File Uploads for Specific Items -->
+                        {% if request.item_classification == 'Specific' %}
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0 text-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Specific Item Requirements
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">For specific items, quotations and vendor documents are required for MD approval.</p>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="quotation_files" class="form-label">Quotation Documents *</label>
+                                            <input type="file" class="form-control" id="quotation_files" name="quotation_files" 
+                                                   multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" required>
+                                            <div class="form-text">Upload vendor quotations (required)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="vendor_documents" class="form-label">Vendor Documents</label>
+                                            <input type="file" class="form-control" id="vendor_documents" name="vendor_documents" 
+                                                   multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
+                                            <div class="form-text">Upload vendor certificates, brochures, etc.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_requests') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Requests
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-file-invoice-dollar me-1"></i>Create Purchase Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-calculate total when unit price or quantity changes
+document.getElementById('unit_price').addEventListener('input', calculateTotal);
+document.getElementById('quantity').addEventListener('input', calculateTotal);
+document.getElementById('gst_percentage').addEventListener('change', calculateTotal);
+
+function calculateTotal() {
+    const unitPrice = parseFloat(document.getElementById('unit_price').value) || 0;
+    const quantity = parseInt(document.getElementById('quantity').value) || 0;
+    const gstPercent = parseFloat(document.getElementById('gst_percentage').value) || 0;
+    
+    const totalAmount = unitPrice * quantity;
+    const gstAmount = (totalAmount * gstPercent) / 100;
+    const grandTotal = totalAmount + gstAmount;
+    
+    // Display calculated amounts (you can add display elements if needed)
+    console.log('Total Amount:', totalAmount.toFixed(2));
+    console.log('GST Amount:', gstAmount.toFixed(2));
+    console.log('Grand Total:', grandTotal.toFixed(2));
+}
+
+// Auto-populate vendor GST when vendor is selected
+document.getElementById('vendor_id').addEventListener('change', function() {
+    // You can add AJAX call here to fetch vendor details if needed
+});
+</script>
+{% endblock %}

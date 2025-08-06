@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block title %}New Request - Hexamed Asset Management{% endblock %}
@@ -12,15 +13,68 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="item_name" class="form-label">Item Name *</label>
-                                <input type="text" class="form-control" id="item_name" name="item_name" required>
+                        <!-- Request Type Selection -->
+                        <div class="mb-4">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="entry_type" id="single_entry" value="single" checked onchange="toggleEntryType()">
+                                <label class="form-check-label" for="single_entry">
+                                    <i class="fas fa-file"></i> Single Item Request
+                                </label>
                             </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label for="quantity" class="form-label">Quantity *</label>
-                                <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="entry_type" id="bulk_entry" value="bulk" onchange="toggleEntryType()">
+                                <label class="form-check-label" for="bulk_entry">
+                                    <i class="fas fa-list"></i> Bulk Items Request
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Single Item Form -->
+                        <div id="single_item_form">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="item_name" class="form-label">Item Name *</label>
+                                    <input type="text" class="form-control" id="item_name" name="item_name">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="quantity" class="form-label">Quantity *</label>
+                                    <input type="number" class="form-control" id="quantity" name="quantity" min="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bulk Items Form -->
+                        <div id="bulk_items_form" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Bulk Items *</label>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" id="bulk_items_table">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Item Name</th>
+                                                <th>Quantity</th>
+                                                <th>Estimated Cost</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bulk_items_tbody">
+                                            <tr>
+                                                <td><input type="text" class="form-control" name="bulk_item_name[]" placeholder="Item Name"></td>
+                                                <td><input type="number" class="form-control" name="bulk_quantity[]" min="1" placeholder="Qty"></td>
+                                                <td><input type="number" class="form-control" name="bulk_cost[]" step="0.01" placeholder="Cost"></td>
+                                                <td>
+                                                    <button type="button" class="btn btn-danger btn-sm" onclick="removeBulkRow(this)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addBulkRow()">
+                                    <i class="fas fa-plus"></i> Add Item
+                                </button>
                             </div>
                         </div>
                         
@@ -47,10 +101,10 @@
                             </div>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="mb-3" id="single_cost_field">
                             <label for="estimated_cost" class="form-label">Estimated Cost (Optional)</label>
                             <div class="input-group">
-                                <span class="input-group-text">$</span>
+                                <span class="input-group-text">₹</span>
                                 <input type="number" class="form-control" id="estimated_cost" name="estimated_cost" step="0.01">
                             </div>
                         </div>
@@ -88,15 +142,15 @@
                 <div class="card-body">
                     <h6><i class="fas fa-info-circle"></i> Approval Process</h6>
                     <div class="row">
-                        <div class="col-md-4 text-center mb-3">
+                        <div class="col-md-3 text-center mb-3">
                             <div class="d-flex flex-column align-items-center">
                                 <div class="bg-warning rounded-circle p-3 mb-2">
                                     <i class="fas fa-user-tie text-dark"></i>
                                 </div>
-                                <small>Step 1: Concern Manager</small>
+                                <small>Step 1: Manager</small>
                             </div>
                         </div>
-                        <div class="col-md-4 text-center mb-3">
+                        <div class="col-md-3 text-center mb-3">
                             <div class="d-flex flex-column align-items-center">
                                 <div class="bg-info rounded-circle p-3 mb-2">
                                     <i class="fas fa-user-cog text-white"></i>
@@ -104,12 +158,20 @@
                                 <small>Step 2: Admin</small>
                             </div>
                         </div>
-                        <div class="col-md-4 text-center mb-3">
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="d-flex flex-column align-items-center">
+                                <div class="bg-primary rounded-circle p-3 mb-2">
+                                    <i class="fas fa-boxes text-white"></i>
+                                </div>
+                                <small>Step 3: SCM</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
                             <div class="d-flex flex-column align-items-center">
                                 <div class="bg-success rounded-circle p-3 mb-2">
                                     <i class="fas fa-crown text-white"></i>
                                 </div>
-                                <small>Step 3: MD (Final)</small>
+                                <small>Step 4: MD (if needed)</small>
                             </div>
                         </div>
                     </div>
@@ -122,6 +184,54 @@
 
 {% block scripts %}
 <script>
+function toggleEntryType() {
+    const singleEntry = document.getElementById('single_entry');
+    const bulkEntry = document.getElementById('bulk_entry');
+    const singleForm = document.getElementById('single_item_form');
+    const bulkForm = document.getElementById('bulk_items_form');
+    const singleCostField = document.getElementById('single_cost_field');
+    
+    if (singleEntry.checked) {
+        singleForm.style.display = 'block';
+        bulkForm.style.display = 'none';
+        singleCostField.style.display = 'block';
+        
+        // Make single fields required
+        document.getElementById('item_name').required = true;
+        document.getElementById('quantity').required = true;
+        
+        // Remove required from bulk fields
+        const bulkInputs = bulkForm.querySelectorAll('input');
+        bulkInputs.forEach(input => input.required = false);
+    } else {
+        singleForm.style.display = 'none';
+        bulkForm.style.display = 'block';
+        singleCostField.style.display = 'none';
+        
+        // Remove required from single fields
+        document.getElementById('item_name').required = false;
+        document.getElementById('quantity').required = false;
+    }
+}
+
+function addBulkRow() {
+    const tbody = document.getElementById('bulk_items_tbody');
+    const newRow = tbody.rows[0].cloneNode(true);
+    
+    // Clear input values
+    const inputs = newRow.querySelectorAll('input');
+    inputs.forEach(input => input.value = '');
+    
+    tbody.appendChild(newRow);
+}
+
+function removeBulkRow(button) {
+    const tbody = document.getElementById('bulk_items_tbody');
+    if (tbody.rows.length > 1) {
+        button.closest('tr').remove();
+    }
+}
+
 // File upload preview
 document.getElementById('files').addEventListener('change', function(e) {
     const files = e.target.files;

@@ -15,6 +15,16 @@ from flask import render_template, request, redirect, url_for, session, flash, s
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, or_, inspect, and_
 from app import app, db
+
+@app.template_filter('from_json')
+def from_json_filter(value):
+    """Custom filter to parse JSON strings in templates"""
+    if value:
+        try:
+            return json.loads(value)
+        except:
+            return []
+    return []
 from models import (User, AssetRequest, UploadedFile, Approval, ActivityLog, Asset, Bill, 
                    InventoryUpdate, Vendor, ItemAssignment, AssetMaintenance, AssetDepreciation, 
                    WarrantyAlert, ProcurementQuotation)
@@ -262,13 +272,51 @@ def dashboard():
 def create_request():
     if request.method == 'POST':
         asset_request = AssetRequest()
-        asset_request.item_name = request.form['item_name']
-        asset_request.quantity = int(request.form['quantity'])
+        
+        entry_type = request.form.get('entry_type', 'single')
+        
+        if entry_type == 'bulk':
+            # Handle bulk request
+            asset_request.is_bulk_request = True
+            
+            bulk_item_names = request.form.getlist('bulk_item_name[]')
+            bulk_quantities = request.form.getlist('bulk_quantity[]')
+            bulk_costs = request.form.getlist('bulk_cost[]')
+            
+            # Filter out empty rows
+            bulk_items = []
+            total_cost = 0
+            for i, name in enumerate(bulk_item_names):
+                if name.strip():
+                    quantity = int(bulk_quantities[i]) if bulk_quantities[i] else 1
+                    cost = float(bulk_costs[i]) if bulk_costs[i] else 0
+                    bulk_items.append({
+                        'name': name.strip(),
+                        'quantity': quantity,
+                        'estimated_cost': cost
+                    })
+                    total_cost += cost * quantity
+            
+            if not bulk_items:
+                flash('Please add at least one item for bulk request.', 'danger')
+                return render_template('request_form.html')
+            
+            asset_request.bulk_items = json.dumps(bulk_items)
+            asset_request.item_name = f"Bulk Request - {len(bulk_items)} items"
+            asset_request.quantity = sum(item['quantity'] for item in bulk_items)
+            asset_request.estimated_cost = total_cost if total_cost > 0 else None
+        else:
+            # Handle single request
+            asset_request.is_bulk_request = False
+            asset_request.item_name = request.form['item_name']
+            asset_request.quantity = int(request.form['quantity'])
+            asset_request.estimated_cost = float(request.form['estimated_cost']) if request.form['estimated_cost'] else None
+        
         asset_request.purpose = request.form['purpose']
         asset_request.request_type = request.form['request_type']
-        asset_request.estimated_cost = float(request.form['estimated_cost']) if request.form['estimated_cost'] else None
         asset_request.urgency = request.form['urgency']
         asset_request.user_id = session['user_id']
+        
         # Set floor from the requesting user
         requesting_user = User.query.get(session['user_id'])
         asset_request.floor = requesting_user.floor
@@ -294,8 +342,9 @@ def create_request():
 
         db.session.commit()
 
+        request_type_desc = "bulk" if entry_type == 'bulk' else "single item"
         log_activity(session['user_id'], 'Request Created', 
-                    f'Created new {asset_request.request_type} request for {asset_request.item_name}',
+                    f'Created new {request_type_desc} {asset_request.request_type} request: {asset_request.item_name}',
                     asset_request.id)
 
         flash('Your request has been submitted successfully!', 'success')
@@ -1507,6 +1556,45 @@ def download_recent_activity():
     # Auto-adjust column widths
 
 
+# SCM Item Classification Route
+@app.route('/classify-item/<int:request_id>', methods=['GET', 'POST'])
+@require_role(['Accounts/SCM'])
+def classify_item(request_id):
+    asset_request = AssetRequest.query.get_or_404(request_id)
+    
+    if asset_request.status != 'Approved':
+        flash('Only approved requests can be classified.', 'warning')
+        return redirect(url_for('view_requests'))
+    
+    if request.method == 'POST':
+        classification = request.form['classification']  # 'Regular' or 'Specific'
+        asset_request.item_classification = classification
+        
+        if classification == 'Regular':
+            # For regular items, SCM can directly create PO
+            return redirect(url_for('create_purchase_order_from_request', request_id=request_id))
+        else:
+            # For specific items, redirect to create PO with vendor selection
+            return redirect(url_for('create_purchase_order_from_request', request_id=request_id, type='specific'))
+    
+    return render_template('classify_item.html', request=asset_request)
+
+@app.route('/create-po-from-request/<int:request_id>')
+@require_role(['Accounts/SCM'])
+def create_purchase_order_from_request(request_id):
+    asset_request = AssetRequest.query.get_or_404(request_id)
+    item_type = request.args.get('type', 'regular')
+    
+    if not asset_request.item_classification:
+        flash('Please classify the item first.', 'warning')
+        return redirect(url_for('classify_item', request_id=request_id))
+    
+    vendors = Vendor.query.filter_by(is_active=True).order_by(Vendor.vendor_name).all()
+    return render_template('create_po_from_request.html', 
+                         request=asset_request, 
+                         vendors=vendors,
+                         item_type=item_type)
+
 # Purchase Order Management Routes
 @app.route('/purchase-orders')
 @require_role(['Accounts/SCM', 'Admin', 'MD'])
@@ -1536,6 +1624,11 @@ def view_purchase_orders():
 def create_purchase_order():
     if request.method == 'POST':
         po = PurchaseOrder()
+        
+        # Check if this PO is being created from a request
+        source_request_id = request.form.get('source_request_id')
+        if source_request_id:
+            po.request_id = int(source_request_id)
         
         # Basic Information
         po.item_type = request.form['item_type']

@@ -45,8 +45,16 @@
                             <td>
                                 <div>
                                     <strong>{{ request.item_name }}</strong>
+                                    {% if request.is_bulk_request %}
+                                        <br><span class="badge bg-info">Bulk Request</span>
+                                    {% endif %}
                                     {% if request.estimated_cost %}
                                         <br><small class="text-muted">₹{{ "%.2f"|format(request.estimated_cost) }}</small>
+                                    {% endif %}
+                                    {% if request.item_classification %}
+                                        <br><span class="badge bg-{{ 'success' if request.item_classification == 'Regular' else 'warning' }}">
+                                            {{ request.item_classification }} Item
+                                        </span>
                                     {% endif %}
                                     {% if user.role == 'Accounts/SCM' and request.status in ['Pending', 'Approved'] %}
                                         {% set matching_assets = [] %}
@@ -173,6 +181,19 @@
                                             </a>
                                         {% endif %}
                                         {% if request.status == 'Approved' and user.role == 'Accounts/SCM' %}
+                                            {% if not request.item_classification %}
+                                                <a href="{{ url_for('classify_item', request_id=request.id) }}" 
+                                                   class="btn btn-outline-info btn-sm"
+                                                   title="Classify Item & Create PO">
+                                                    <i class="fas fa-tags"></i>
+                                                </a>
+                                            {% else %}
+                                                <a href="{{ url_for('create_purchase_order_from_request', request_id=request.id) }}" 
+                                                   class="btn btn-outline-primary btn-sm"
+                                                   title="Create Purchase Order">
+                                                    <i class="fas fa-file-invoice-dollar"></i>
+                                                </a>
+                                            {% endif %}
                                             <a href="{{ url_for('fulfill_request', request_id=request.id) }}" 
                                                class="btn btn-outline-warning btn-sm"
                                                title="Fulfill from Assets">

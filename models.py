@@ -41,6 +41,13 @@ class AssetRequest(db.Model):
     estimated_cost = db.Column(db.Float)
     urgency = db.Column(db.String(20), default='Normal')  
 
+    # Bulk entry support
+    is_bulk_request = db.Column(db.Boolean, default=False)
+    bulk_items = db.Column(db.Text)  # JSON array of items for bulk requests
+    
+    # Item classification for PO generation
+    item_classification = db.Column(db.String(20))  # 'Regular' or 'Specific' - set by SCM
+    
     status = db.Column(db.String(20), default='Pending') 
     current_approval_level = db.Column(db.Integer, default=1)
     floor = db.Column(db.String(50))  

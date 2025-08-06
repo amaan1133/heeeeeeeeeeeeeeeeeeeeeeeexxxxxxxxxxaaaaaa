@@ -1,0 +1,134 @@
+
+{% extends "base.html" %}
+
+{% block title %}Classify Item - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tags me-2"></i>Classify Item for Purchase Order
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Request Details -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title"><i class="fas fa-info-circle me-2"></i>Request Details</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Request ID:</strong> #{{ request.id }}<br>
+                                    {% if request.is_bulk_request %}
+                                        <strong>Type:</strong> Bulk Request<br>
+                                        <strong>Items:</strong> {{ request.bulk_items|length if request.bulk_items else 'Multiple' }} items<br>
+                                    {% else %}
+                                        <strong>Item:</strong> {{ request.item_name }}<br>
+                                        <strong>Quantity:</strong> {{ request.quantity }}<br>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Requester:</strong> {{ request.requester.full_name }}<br>
+                                    <strong>Estimated Cost:</strong> ₹{{ "%.2f"|format(request.estimated_cost) if request.estimated_cost else 'Not specified' }}<br>
+                                    <strong>Urgency:</strong> {{ request.urgency }}<br>
+                                </div>
+                            </div>
+                            
+                            {% if request.is_bulk_request and request.bulk_items %}
+                                <hr>
+                                <h6>Bulk Items:</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Item Name</th>
+                                                <th>Quantity</th>
+                                                <th>Est. Cost</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% set bulk_items = request.bulk_items|from_json %}
+                                            {% for item in bulk_items %}
+                                            <tr>
+                                                <td>{{ item.name }}</td>
+                                                <td>{{ item.quantity }}</td>
+                                                <td>₹{{ "%.2f"|format(item.estimated_cost) if item.estimated_cost else '-' }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Classification Form -->
+                    <form method="POST">
+                        <div class="mb-4">
+                            <h6><i class="fas fa-question-circle me-2"></i>Item Classification</h6>
+                            <p class="text-muted">Please classify this request to determine the purchase order approval process:</p>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card border-success">
+                                        <div class="card-body">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="classification" 
+                                                       id="regular" value="Regular" required>
+                                                <label class="form-check-label" for="regular">
+                                                    <h6 class="text-success">Regular Item</h6>
+                                                </label>
+                                            </div>
+                                            <p class="text-muted small">
+                                                <i class="fas fa-check-circle text-success me-1"></i>
+                                                No MD approval required<br>
+                                                <i class="fas fa-clock text-success me-1"></i>
+                                                Direct PO generation<br>
+                                                <i class="fas fa-bolt text-success me-1"></i>
+                                                Faster processing
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="card border-warning">
+                                        <div class="card-body">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="classification" 
+                                                       id="specific" value="Specific" required>
+                                                <label class="form-check-label" for="specific">
+                                                    <h6 class="text-warning">Specific Item</h6>
+                                                </label>
+                                            </div>
+                                            <p class="text-muted small">
+                                                <i class="fas fa-user-tie text-warning me-1"></i>
+                                                MD approval required<br>
+                                                <i class="fas fa-file-upload text-warning me-1"></i>
+                                                Requires quotations & vendor docs<br>
+                                                <i class="fas fa-hourglass text-warning me-1"></i>
+                                                Extended review process
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_requests') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Requests
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-arrow-right me-1"></i>Proceed with Classification
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
