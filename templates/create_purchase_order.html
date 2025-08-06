@@ -1,0 +1,229 @@
+
+{% extends "base.html" %}
+
+{% block title %}Create Purchase Order - Hexamed{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>Create Purchase Order
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <!-- Item Type Selection -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label class="form-label">Item Type *</label>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card border-info">
+                                            <div class="card-body text-center">
+                                                <input type="radio" name="item_type" value="Regular" id="regular_type" 
+                                                       class="form-check-input me-2" required onchange="toggleApprovalRequirement()">
+                                                <label for="regular_type" class="form-check-label">
+                                                    <i class="fas fa-bolt fa-2x text-info d-block mb-2"></i>
+                                                    <strong>Regular Item</strong>
+                                                    <p class="text-muted small mb-0">No MD approval required. Direct PO generation.</p>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card border-warning">
+                                            <div class="card-body text-center">
+                                                <input type="radio" name="item_type" value="Specific" id="specific_type" 
+                                                       class="form-check-input me-2" required onchange="toggleApprovalRequirement()">
+                                                <label for="specific_type" class="form-check-label">
+                                                    <i class="fas fa-cogs fa-2x text-warning d-block mb-2"></i>
+                                                    <strong>Specific Item</strong>
+                                                    <p class="text-muted small mb-0">Requires MD approval with quotations.</p>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Basic Item Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="item_name" class="form-label">Item Name *</label>
+                                <input type="text" class="form-control" id="item_name" name="item_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="quantity" class="form-label">Quantity *</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="item_description" class="form-label">Item Description</label>
+                            <textarea class="form-control" id="item_description" name="item_description" rows="3" 
+                                      placeholder="Detailed description of the item..."></textarea>
+                        </div>
+
+                        <!-- Vendor Selection -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="vendor_id" class="form-label">Select Vendor *</label>
+                                <select class="form-select" id="vendor_id" name="vendor_id" required onchange="updateVendorDetails()">
+                                    <option value="">Choose vendor...</option>
+                                    {% for vendor in vendors %}
+                                    <option value="{{ vendor.id }}" 
+                                            data-payment-terms="{{ vendor.payment_terms or 'Net 30 days' }}"
+                                            data-address="{{ vendor.address or '' }}">
+                                        {{ vendor.vendor_name }}
+                                        {% if vendor.vendor_code %} ({{ vendor.vendor_code }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="vendor_gst" class="form-label">Vendor GST Number</label>
+                                <input type="text" class="form-control" id="vendor_gst" name="vendor_gst" 
+                                       placeholder="GST number if available">
+                            </div>
+                        </div>
+
+                        <!-- Pricing Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="unit_price" class="form-label">Unit Price *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="unit_price" name="unit_price" 
+                                           step="0.01" required onchange="calculateTotals()">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="gst_percentage" class="form-label">GST %</label>
+                                <input type="number" class="form-control" id="gst_percentage" name="gst_percentage" 
+                                       value="18" step="0.01" onchange="calculateTotals()">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="grand_total" class="form-label">Grand Total</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="text" class="form-control" id="grand_total" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="payment_terms" class="form-label">Payment Terms</label>
+                                <input type="text" class="form-control" id="payment_terms" name="payment_terms" 
+                                       value="Net 30 days">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="expected_delivery_date" class="form-label">Expected Delivery Date</label>
+                                <input type="date" class="form-control" id="expected_delivery_date" 
+                                       name="expected_delivery_date">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="delivery_terms" class="form-label">Delivery Terms</label>
+                                <input type="text" class="form-control" id="delivery_terms" name="delivery_terms" 
+                                       placeholder="FOB, CIF, etc.">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="warranty_terms" class="form-label">Warranty Terms</label>
+                                <input type="text" class="form-control" id="warranty_terms" name="warranty_terms" 
+                                       placeholder="Warranty period and terms">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="special_instructions" class="form-label">Special Instructions</label>
+                            <textarea class="form-control" id="special_instructions" name="special_instructions" rows="2" 
+                                      placeholder="Any special instructions for the vendor..."></textarea>
+                        </div>
+
+                        <!-- File Upload Section (Only for Specific Items) -->
+                        <div id="specific_item_files" style="display: none;">
+                            <hr>
+                            <h6 class="text-warning"><i class="fas fa-paperclip me-2"></i>Required Documents for Specific Items</h6>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="quotation_files" class="form-label">Quotation Files *</label>
+                                    <input type="file" class="form-control" id="quotation_files" name="quotation_files" 
+                                           multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                    <div class="form-text">Upload vendor quotations (PDF, DOC, Images)</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="vendor_documents" class="form-label">Vendor Documents</label>
+                                    <input type="file" class="form-control" id="vendor_documents" name="vendor_documents" 
+                                           multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                    <div class="form-text">Upload vendor certificates, brochures, etc.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_purchase_orders') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i><span id="submit_text">Create Purchase Order</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleApprovalRequirement() {
+    const specificType = document.getElementById('specific_type').checked;
+    const specificFiles = document.getElementById('specific_item_files');
+    const submitText = document.getElementById('submit_text');
+    const quotationFiles = document.getElementById('quotation_files');
+    
+    if (specificType) {
+        specificFiles.style.display = 'block';
+        submitText.textContent = 'Submit for MD Review';
+        quotationFiles.required = true;
+    } else {
+        specificFiles.style.display = 'none';
+        submitText.textContent = 'Create Purchase Order';
+        quotationFiles.required = false;
+    }
+}
+
+function updateVendorDetails() {
+    const vendorSelect = document.getElementById('vendor_id');
+    const selectedOption = vendorSelect.options[vendorSelect.selectedIndex];
+    
+    if (selectedOption.value) {
+        document.getElementById('payment_terms').value = selectedOption.dataset.paymentTerms;
+    }
+}
+
+function calculateTotals() {
+    const quantity = parseFloat(document.getElementById('quantity').value) || 0;
+    const unitPrice = parseFloat(document.getElementById('unit_price').value) || 0;
+    const gstPercentage = parseFloat(document.getElementById('gst_percentage').value) || 0;
+    
+    const totalAmount = quantity * unitPrice;
+    const gstAmount = (totalAmount * gstPercentage) / 100;
+    const grandTotal = totalAmount + gstAmount;
+    
+    document.getElementById('grand_total').value = grandTotal.toFixed(2);
+}
+
+// Auto-calculate when quantity changes
+document.getElementById('quantity').addEventListener('input', calculateTotals);
+</script>
+{% endblock %}

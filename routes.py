@@ -1,7 +1,15 @@
 import os
 import uuid
+
+import json
+
 import shutil
 from datetime import datetime, date, timedelta
+
+from models import (User, AssetRequest, UploadedFile, Approval, ActivityLog, Asset, Bill, 
+                   InventoryUpdate, Vendor, ItemAssignment, AssetMaintenance, AssetDepreciation, 
+                   WarrantyAlert, ProcurementQuotation, PurchaseOrder)
+
 from dateutil.relativedelta import relativedelta
 from flask import render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
@@ -1497,6 +1505,291 @@ def download_recent_activity():
         ws_activity.cell(row=row, column=7, value=activity.request_id or '')
 
     # Auto-adjust column widths
+
+
+# Purchase Order Management Routes
+@app.route('/purchase-orders')
+@require_role(['Accounts/SCM', 'Admin', 'MD'])
+def view_purchase_orders():
+    user = User.query.get(session['user_id'])
+    page = request.args.get('page', 1, type=int)
+    status = request.args.get('status', '')
+    po_type = request.args.get('type', '')
+
+    query = PurchaseOrder.query
+    if status:
+        query = query.filter_by(status=status)
+    if po_type:
+        query = query.filter_by(item_type=po_type)
+
+    purchase_orders = query.order_by(PurchaseOrder.created_at.desc()).paginate(
+        page=page, per_page=15, error_out=False)
+
+    return render_template('purchase_orders.html', 
+                         purchase_orders=purchase_orders,
+                         selected_status=status,
+                         selected_type=po_type,
+                         user=user)
+
+@app.route('/purchase-order/create', methods=['GET', 'POST'])
+@require_role(['Accounts/SCM'])
+def create_purchase_order():
+    if request.method == 'POST':
+        po = PurchaseOrder()
+        
+        # Basic Information
+        po.item_type = request.form['item_type']
+        po.item_name = request.form['item_name']
+        po.item_description = request.form.get('item_description', '')
+        po.quantity = int(request.form['quantity'])
+        po.unit_price = float(request.form['unit_price'])
+        po.gst_percentage = float(request.form.get('gst_percentage', 18.0))
+        
+        # Vendor Information
+        po.vendor_id = int(request.form['vendor_id'])
+        vendor = Vendor.query.get(po.vendor_id)
+        po.vendor_name = vendor.vendor_name
+        po.vendor_address = vendor.address
+        po.vendor_gst = request.form.get('vendor_gst', '')
+        
+        # Terms
+        po.payment_terms = request.form.get('payment_terms', 'Net 30 days')
+        po.delivery_terms = request.form.get('delivery_terms', '')
+        po.warranty_terms = request.form.get('warranty_terms', '')
+        po.special_instructions = request.form.get('special_instructions', '')
+        
+        # Expected delivery
+        if request.form.get('expected_delivery_date'):
+            po.expected_delivery_date = datetime.strptime(request.form['expected_delivery_date'], '%Y-%m-%d').date()
+        
+        po.created_by = session['user_id']
+        
+        # Calculate totals
+        po.calculate_totals()
+        po.generate_po_number()
+        
+        # Set approval requirements based on item type
+        if po.item_type == 'Specific':
+            po.requires_md_approval = True
+            po.status = 'MD Review Pending'
+            
+            # Handle file uploads for specific items
+            quotation_files = []
+            vendor_docs = []
+            
+            uploaded_quotations = request.files.getlist('quotation_files')
+            for file in uploaded_quotations:
+                if file and file.filename and allowed_file(file.filename):
+                    filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(file_path)
+                    quotation_files.append(filename)
+            
+            uploaded_vendor_docs = request.files.getlist('vendor_documents')
+            for file in uploaded_vendor_docs:
+                if file and file.filename and allowed_file(file.filename):
+                    filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(file_path)
+                    vendor_docs.append(filename)
+            
+            po.quotation_files = json.dumps(quotation_files) if quotation_files else None
+            po.vendor_documents = json.dumps(vendor_docs) if vendor_docs else None
+            
+        else:  # Regular item
+            po.requires_md_approval = False
+            po.md_approved = True
+            po.status = 'Approved'
+        
+        try:
+            db.session.add(po)
+            db.session.commit()
+
+            log_activity(session['user_id'], 'Purchase Order Created', 
+                        f'Created {po.item_type} purchase order {po.po_number} for {po.item_name}')
+            
+            if po.item_type == 'Regular':
+                flash(f'Regular item purchase order {po.po_number} created successfully!', 'success')
+            else:
+                flash(f'Specific item purchase order {po.po_number} created and sent for MD review!', 'info')
+            
+            return redirect(url_for('view_purchase_orders'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Error creating purchase order. Please try again.', 'danger')
+    
+    vendors = Vendor.query.filter_by(is_active=True).order_by(Vendor.vendor_name).all()
+    requests = AssetRequest.query.filter_by(status='Approved').all()
+    return render_template('create_purchase_order.html', vendors=vendors, requests=requests)
+
+@app.route('/purchase-order/<int:po_id>')
+@require_role(['Accounts/SCM', 'Admin', 'MD'])
+def view_purchase_order_detail(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    user = User.query.get(session['user_id'])
+    
+    # Parse file attachments
+    quotation_files = json.loads(po.quotation_files) if po.quotation_files else []
+    vendor_documents = json.loads(po.vendor_documents) if po.vendor_documents else []
+    
+    return render_template('purchase_order_detail.html', 
+                         po=po, 
+                         user=user,
+                         quotation_files=quotation_files,
+                         vendor_documents=vendor_documents)
+
+@app.route('/purchase-order/<int:po_id>/md-review', methods=['GET', 'POST'])
+@require_role(['MD'])
+def md_review_purchase_order(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    
+    if po.status != 'MD Review Pending':
+        flash('This purchase order is not pending MD review.', 'warning')
+        return redirect(url_for('view_purchase_order_detail', po_id=po_id))
+    
+    if request.method == 'POST':
+        action = request.form['action']  # approve or reject
+        po.md_comments = request.form.get('comments', '')
+        
+        if action == 'approve':
+            po.md_approved = True
+            po.status = 'Approved'
+            po.approved_by_md = session['user_id']
+            po.approved_at = datetime.utcnow()
+            
+            log_activity(session['user_id'], 'PO MD Approved', 
+                        f'MD approved purchase order {po.po_number}')
+            flash(f'Purchase order {po.po_number} approved! SCM can now generate the final PO.', 'success')
+        else:
+            po.status = 'MD Rejected'
+            
+            log_activity(session['user_id'], 'PO MD Rejected', 
+                        f'MD rejected purchase order {po.po_number}')
+            flash(f'Purchase order {po.po_number} rejected and returned to SCM for updates.', 'info')
+        
+        po.updated_by = session['user_id']
+        db.session.commit()
+        
+        return redirect(url_for('view_purchase_orders'))
+    
+    # Parse file attachments for display
+    quotation_files = json.loads(po.quotation_files) if po.quotation_files else []
+    vendor_documents = json.loads(po.vendor_documents) if po.vendor_documents else []
+    
+    return render_template('md_review_po.html', 
+                         po=po,
+                         quotation_files=quotation_files,
+                         vendor_documents=vendor_documents)
+
+@app.route('/purchase-order/<int:po_id>/update-vendor', methods=['GET', 'POST'])
+@require_role(['Accounts/SCM'])
+def update_po_vendor(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    
+    if po.status != 'MD Rejected':
+        flash('Only MD rejected purchase orders can be updated.', 'warning')
+        return redirect(url_for('view_purchase_order_detail', po_id=po_id))
+    
+    if request.method == 'POST':
+        # Update vendor information
+        po.vendor_id = int(request.form['vendor_id'])
+        vendor = Vendor.query.get(po.vendor_id)
+        po.vendor_name = vendor.vendor_name
+        po.vendor_address = vendor.address
+        po.vendor_gst = request.form.get('vendor_gst', '')
+        
+        # Update pricing
+        po.unit_price = float(request.form['unit_price'])
+        po.gst_percentage = float(request.form.get('gst_percentage', 18.0))
+        
+        # Recalculate totals
+        po.calculate_totals()
+        
+        # Handle new file uploads
+        quotation_files = json.loads(po.quotation_files) if po.quotation_files else []
+        vendor_docs = json.loads(po.vendor_documents) if po.vendor_documents else []
+        
+        uploaded_quotations = request.files.getlist('quotation_files')
+        for file in uploaded_quotations:
+            if file and file.filename and allowed_file(file.filename):
+                filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                quotation_files.append(filename)
+        
+        uploaded_vendor_docs = request.files.getlist('vendor_documents')
+        for file in uploaded_vendor_docs:
+            if file and file.filename and allowed_file(file.filename):
+                filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                vendor_docs.append(filename)
+        
+        po.quotation_files = json.dumps(quotation_files) if quotation_files else None
+        po.vendor_documents = json.dumps(vendor_docs) if vendor_docs else None
+        
+        # Reset status for MD review
+        po.status = 'MD Review Pending'
+        po.md_approved = False
+        po.md_comments = None
+        po.updated_by = session['user_id']
+        
+        db.session.commit()
+        
+        log_activity(session['user_id'], 'PO Updated', 
+                    f'Updated purchase order {po.po_number} with new vendor and resubmitted for MD review')
+        flash(f'Purchase order {po.po_number} updated and resubmitted for MD review!', 'info')
+        
+        return redirect(url_for('view_purchase_orders'))
+    
+    vendors = Vendor.query.filter_by(is_active=True).order_by(Vendor.vendor_name).all()
+    return render_template('update_po_vendor.html', po=po, vendors=vendors)
+
+@app.route('/purchase-order/<int:po_id>/generate', methods=['POST'])
+@require_role(['Accounts/SCM'])
+def generate_final_purchase_order(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    
+    if po.status != 'Approved':
+        flash('Only approved purchase orders can be generated.', 'warning')
+        return redirect(url_for('view_purchase_order_detail', po_id=po_id))
+    
+    po.status = 'Generated'
+    po.po_status = 'Created'
+    po.updated_by = session['user_id']
+    
+    db.session.commit()
+    
+    log_activity(session['user_id'], 'PO Generated', 
+                f'Generated final purchase order {po.po_number}')
+    flash(f'Purchase order {po.po_number} generated successfully!', 'success')
+    
+    return redirect(url_for('print_purchase_order', po_id=po_id))
+
+@app.route('/purchase-order/<int:po_id>/print')
+@require_role(['Accounts/SCM', 'Admin', 'MD'])
+def print_purchase_order(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    return render_template('print_purchase_order.html', po=po)
+
+@app.route('/purchase-order/<int:po_id>/update-status', methods=['POST'])
+@require_role(['Accounts/SCM', 'Admin'])
+def update_po_status(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    
+    po.po_status = request.form['po_status']
+    po.updated_by = session['user_id']
+    
+    db.session.commit()
+    
+    log_activity(session['user_id'], 'PO Status Updated', 
+                f'Updated purchase order {po.po_number} status to {po.po_status}')
+    flash(f'Purchase order status updated to {po.po_status}!', 'success')
+    
+    return redirect(url_for('view_purchase_order_detail', po_id=po_id))
+
+
     for column in ws_activity.columns:
         max_length = 0
         column_letter = column[0].column_letter
