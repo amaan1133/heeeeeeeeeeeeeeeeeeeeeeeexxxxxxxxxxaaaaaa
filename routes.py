@@ -2328,12 +2328,26 @@ def create_purchase_order():
         po.quantity = int(request.form['quantity'])
         po.unit_price = float(request.form['unit_price'])
         po.vendor_id = int(request.form['vendor_id'])
-        po.vendor_name = request.form['vendor_name']
+        
+        # Get vendor name from the vendor object instead of form
+        vendor = Vendor.query.get(po.vendor_id)
+        po.vendor_name = vendor.vendor_name if vendor else 'Unknown Vendor'
+        
+        po.vendor_gst = request.form.get('vendor_gst', '')
+        po.vendor_address = request.form.get('vendor_address', '')
+        po.delivery_address = request.form.get('delivery_address', '')
+        po.gst_percentage = float(request.form.get('gst_percentage', 18))
         po.payment_terms = request.form.get('payment_terms', 'Net 30 days')
         po.delivery_terms = request.form.get('delivery_terms', '')
         po.warranty_terms = request.form.get('warranty_terms', '')
         po.special_instructions = request.form.get('special_instructions', '')
+        po.expected_delivery_date = datetime.strptime(request.form['expected_delivery_date'], '%Y-%m-%d').date() if request.form.get('expected_delivery_date') else None
         po.created_by = session['user_id']
+        
+        # Handle source request if this PO is created from a request
+        source_request_id = request.form.get('source_request_id')
+        if source_request_id:
+            po.request_id = int(source_request_id)
         
         # Generate PO number and calculate totals
         po.generate_po_number()
@@ -2343,6 +2357,39 @@ def create_purchase_order():
         if po.item_type == 'Specific':
             po.requires_md_approval = True
             po.status = 'MD Review Pending'
+            
+            # Handle file uploads for specific items
+            uploaded_files = request.files.getlist('quotation_files')
+            for file in uploaded_files:
+                if file and file.filename and allowed_file(file.filename):
+                    filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(file_path)
+
+                    uploaded_file = UploadedFile()
+                    uploaded_file.filename = filename
+                    uploaded_file.original_filename = file.filename
+                    uploaded_file.file_path = file_path
+                    uploaded_file.file_size = os.path.getsize(file_path)
+                    uploaded_file.mime_type = file.content_type
+                    uploaded_file.po_id = po.id  # Link to PO instead of request
+                    db.session.add(uploaded_file)
+
+            vendor_docs = request.files.getlist('vendor_documents')
+            for file in vendor_docs:
+                if file and file.filename and allowed_file(file.filename):
+                    filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(file_path)
+
+                    uploaded_file = UploadedFile()
+                    uploaded_file.filename = filename
+                    uploaded_file.original_filename = file.filename
+                    uploaded_file.file_path = file_path
+                    uploaded_file.file_size = os.path.getsize(file_path)
+                    uploaded_file.mime_type = file.content_type
+                    uploaded_file.po_id = po.id  # Link to PO instead of request
+                    db.session.add(uploaded_file)
         else:
             po.status = 'Approved'
 
