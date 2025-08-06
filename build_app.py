@@ -11,6 +11,12 @@ import zipfile
 import subprocess
 import sys
 from datetime import datetime
+#hello world  this applicatio is build in python 3 and flaslk it requires sqlalchemy , panadas , openpyxl ,flask , werkzeug , xlrd, email_validator
+# this is puerly python based and it uses html,css, javascript bootstrap  and sql lite database  
+# this software is used to manage assets  raise requests procurenment and inventory management and in is only made for the hexamed compny pvt india ltd 
+#in order to use this application you need to contact the md for user creation unless md can create users you cant be able to enter the application this is puerly self centric application and itb is not ment for any other purpose other then hexamed company pvt ltd india 
+# step 1 user creation step 2 user login step 3 request creation step 4 request approval step 5 request fullfillment step 6 request delivery step 7 request completeion step 8 request tracking step 9 request reporting step 10 request audit trail step 11 request audit trail reporting step 12 request audit step 13 generate reports step 14 generate purchase orders step 15 generate bills step 16 generate invoices step 17 generate receipts 
+
 
 def create_compiled_executable():
     """Create standalone executable using PyInstaller"""
