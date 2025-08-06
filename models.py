@@ -1,5 +1,3 @@
-
-
 import json
 
 from datetime import datetime
@@ -44,14 +42,14 @@ class AssetRequest(db.Model):
     # Bulk entry support
     is_bulk_request = db.Column(db.Boolean, default=False)
     bulk_items = db.Column(db.Text)  # JSON array of items for bulk requests
-    
+
     # Item classification for PO generation
     item_classification = db.Column(db.String(20))  # 'Regular' or 'Specific' - set by SCM
-    
+
     status = db.Column(db.String(20), default='Pending') 
     current_approval_level = db.Column(db.Integer, default=1)
     floor = db.Column(db.String(50))  
-    
+
     fulfilled_from_asset_id = db.Column(db.Integer, db.ForeignKey('asset.id'))
     fulfilled_quantity = db.Column(db.Integer, default=0)
     fulfilled_by = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -284,13 +282,13 @@ class AssetDepreciation(db.Model):
         """Calculate current depreciation based on time elapsed"""
         from datetime import date
         from dateutil.relativedelta import relativedelta
-        
+
         if not self.depreciation_start_date:
             return 0
-        
+
         today = date.today()
         months_elapsed = relativedelta(today, self.depreciation_start_date).years * 12 + relativedelta(today, self.depreciation_start_date).months
-        
+
         total_depreciation = (months_elapsed / 12) * self.annual_depreciation
         return min(total_depreciation, self.asset.purchase_cost - self.salvage_value)
 
@@ -370,52 +368,52 @@ class PurchaseOrder(db.Model):
     gst_percentage = db.Column(db.Float, default=18.0)
     gst_amount = db.Column(db.Float, nullable=False)
     grand_total = db.Column(db.Float, nullable=False)
-    
+
     # Vendor Information
     vendor_id = db.Column(db.Integer, db.ForeignKey('vendor.id'), nullable=False)
     vendor_name = db.Column(db.String(200), nullable=False)
     vendor_address = db.Column(db.Text)
     vendor_gst = db.Column(db.String(50))
     delivery_address = db.Column(db.Text)
-    
+
     # Status and Workflow
     status = db.Column(db.String(50), default='Draft')  # Draft, MD Review Pending, Approved, Generated, Cancelled
     po_status = db.Column(db.String(50), default='Created')  # Created, Sent, Acknowledged, Delivered, Closed
-    
+
     # Approval workflow for Specific items
     requires_md_approval = db.Column(db.Boolean, default=False)
     md_approved = db.Column(db.Boolean, default=False)
     md_comments = db.Column(db.Text)
     approved_by_md = db.Column(db.Integer, db.ForeignKey('user.id'))
     approved_at = db.Column(db.DateTime)
-    
+
     # Terms and Conditions
     payment_terms = db.Column(db.String(200), default='Net 30 days')
     delivery_terms = db.Column(db.String(200))
     warranty_terms = db.Column(db.Text)
     special_instructions = db.Column(db.Text)
-    
+
     # Quotation attachments for Specific items
     quotation_files = db.Column(db.Text)  # JSON array of file paths
     vendor_documents = db.Column(db.Text)  # JSON array of vendor document paths
-    
+
     # Relationships and tracking
     request_id = db.Column(db.Integer, db.ForeignKey('asset_request.id'))
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     updated_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     po_date = db.Column(db.Date, default=datetime.utcnow().date)
     expected_delivery_date = db.Column(db.Date)
-    
+
     # Relationships
     vendor = db.relationship('Vendor', backref='purchase_orders')
     request = db.relationship('AssetRequest', backref='purchase_orders')
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_pos')
     updater = db.relationship('User', foreign_keys=[updated_by], backref='updated_pos')
     md_approver = db.relationship('User', foreign_keys=[approved_by_md], backref='approved_pos')
-    
+
     def generate_po_number(self):
         """Generate unique PO number"""
         from datetime import datetime
@@ -423,21 +421,20 @@ class PurchaseOrder(db.Model):
         last_po = PurchaseOrder.query.filter(
             PurchaseOrder.po_number.like(f'PO{date_str}%')
         ).order_by(PurchaseOrder.po_number.desc()).first()
-        
+
         if last_po:
             last_num = int(last_po.po_number[-4:])
             new_num = last_num + 1
         else:
             new_num = 1
-            
+
         self.po_number = f'PO{date_str}{new_num:04d}'
-    
+
     def calculate_totals(self):
         """Calculate GST and grand total"""
         self.total_amount = self.quantity * self.unit_price
         self.gst_amount = (self.total_amount * self.gst_percentage) / 100
         self.grand_total = self.total_amount + self.gst_amount
-    
+
     def __repr__(self):
         return f'<PurchaseOrder {self.po_number} - {self.vendor_name}>'
-
