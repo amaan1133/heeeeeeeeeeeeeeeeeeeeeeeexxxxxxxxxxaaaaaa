@@ -550,3 +550,75 @@ body {
                 padding: 0.2em 0.3em;
             }
         }
+
+        /* Additional fixes for very tight screens */
+        @media (max-width: 1600px) {
+            .navbar-nav .nav-link {
+                font-size: 0.9rem;
+                padding: 0.5rem 0.6rem;
+            }
+        }
+
+        @media (max-width: 1500px) {
+            .navbar-nav .nav-link {
+                font-size: 0.85rem;
+                padding: 0.5rem 0.5rem;
+            }
+        }
+
+        @media (max-width: 1300px) {
+            .navbar-nav .nav-link {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.3rem;
+            }
+            
+            .navbar-brand {
+                font-size: 1rem;
+            }
+        }
+
+        /* Hide less critical nav items on smaller screens */
+        @media (max-width: 1200px) {
+            .nav-item:nth-child(n+6) {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .nav-item:nth-child(n+5) {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .nav-item:nth-child(n+4) {
+                display: none !important;
+            }
+        }
+
+        /* Force navbar to collapse on medium screens */
+        @media (max-width: 1200px) {
+            .navbar-collapse {
+                display: none !important;
+            }
+            
+            .navbar-toggler {
+                display: block !important;
+            }
+        }
+
+        /* Ensure navbar container doesn't overflow */
+        .navbar .container {
+            overflow: hidden;
+        }
+
+        /* Compress navbar items further */
+        @media (max-width: 1400px) {
+            .navbar-nav {
+                gap: 0;
+            }
+            
+            .navbar-nav .nav-item {
+                flex-shrink: 1;
+            }
+        }
