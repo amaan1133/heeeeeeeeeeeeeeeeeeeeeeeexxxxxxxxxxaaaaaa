@@ -103,8 +103,19 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="gst_percentage" class="form-label">GST %</label>
-                                <input type="number" class="form-control" id="gst_percentage" name="gst_percentage" 
-                                       value="18" step="0.01" onchange="calculateTotals()">
+                                <div class="input-group">
+                                    <select class="form-select" id="gst_select" onchange="handleGstSelection()">
+                                        <option value="0">0% GST</option>
+                                        <option value="5">5% GST</option>
+                                        <option value="12">12% GST</option>
+                                        <option value="18" selected>18% GST</option>
+                                        <option value="28">28% GST</option>
+                                        <option value="custom">Custom GST</option>
+                                    </select>
+                                    <input type="number" class="form-control" id="gst_percentage" name="gst_percentage" 
+                                           value="18" step="0.01" min="0" max="100" onchange="calculateTotals()" 
+                                           style="display: none;" placeholder="Enter GST %">
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label for="grand_total" class="form-label">Grand Total</label>
@@ -211,6 +222,23 @@ function updateVendorDetails() {
     }
 }
 
+function handleGstSelection() {
+    const gstSelect = document.getElementById('gst_select');
+    const gstInput = document.getElementById('gst_percentage');
+    
+    if (gstSelect.value === 'custom') {
+        gstSelect.style.display = 'none';
+        gstInput.style.display = 'block';
+        gstInput.focus();
+        gstInput.value = '';
+    } else {
+        gstSelect.style.display = 'block';
+        gstInput.style.display = 'none';
+        gstInput.value = gstSelect.value;
+        calculateTotals();
+    }
+}
+
 function calculateTotals() {
     const quantity = parseFloat(document.getElementById('quantity').value) || 0;
     const unitPrice = parseFloat(document.getElementById('unit_price').value) || 0;
@@ -221,7 +249,44 @@ function calculateTotals() {
     const grandTotal = totalAmount + gstAmount;
     
     document.getElementById('grand_total').value = grandTotal.toFixed(2);
+    
+    // Show breakdown in a small info box
+    const breakdown = `
+        <small class="text-muted">
+            Subtotal: ₹${totalAmount.toFixed(2)} | 
+            GST (${gstPercentage}%): ₹${gstAmount.toFixed(2)} | 
+            Total: ₹${grandTotal.toFixed(2)}
+        </small>
+    `;
+    
+    // Add breakdown display if it doesn't exist
+    let breakdownDiv = document.getElementById('price-breakdown');
+    if (!breakdownDiv) {
+        breakdownDiv = document.createElement('div');
+        breakdownDiv.id = 'price-breakdown';
+        breakdownDiv.className = 'mt-2';
+        document.getElementById('grand_total').parentNode.appendChild(breakdownDiv);
+    }
+    breakdownDiv.innerHTML = breakdown;
 }
+
+// Allow user to go back to dropdown from manual input
+document.getElementById('gst_percentage').addEventListener('blur', function() {
+    const gstSelect = document.getElementById('gst_select');
+    const gstInput = document.getElementById('gst_percentage');
+    
+    if (gstInput.value === '' || gstInput.value === '0') {
+        gstSelect.selectedIndex = 0; // 0% GST
+    } else if (['5', '12', '18', '28'].includes(gstInput.value)) {
+        gstSelect.selectedIndex = ['5', '12', '18', '28'].indexOf(gstInput.value) + 1;
+    }
+    
+    // If user entered a standard value, show dropdown again
+    if (['0', '5', '12', '18', '28'].includes(gstInput.value)) {
+        gstSelect.style.display = 'block';
+        gstInput.style.display = 'none';
+    }
+});
 
 // Auto-calculate when quantity changes
 document.getElementById('quantity').addEventListener('input', calculateTotals);

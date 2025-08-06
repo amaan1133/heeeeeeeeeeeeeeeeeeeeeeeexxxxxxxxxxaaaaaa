@@ -41,14 +41,51 @@
             <div class="col-md-6">
                 <div class="mb-3">
                     <label for="gst_percentage" class="form-label">GST Percentage</label>
-                    <select class="form-select" id="gst_percentage" name="gst_percentage">
-                        <option value="0" {{ 'selected' if po.gst_percentage == 0 }}>0%</option>
-                        <option value="5" {{ 'selected' if po.gst_percentage == 5 }}>5%</option>
-                        <option value="12" {{ 'selected' if po.gst_percentage == 12 }}>12%</option>
-                        <option value="18" {{ 'selected' if po.gst_percentage == 18 }}>18%</option>
-                        <option value="28" {{ 'selected' if po.gst_percentage == 28 }}>28%</option>
-                    </select>
+                    <div class="input-group">
+                        <select class="form-select" id="gst_select" onchange="handleGstSelection()">
+                            <option value="0" {{ 'selected' if po.gst_percentage == 0 }}>0% GST</option>
+                            <option value="5" {{ 'selected' if po.gst_percentage == 5 }}>5% GST</option>
+                            <option value="12" {{ 'selected' if po.gst_percentage == 12 }}>12% GST</option>
+                            <option value="18" {{ 'selected' if po.gst_percentage == 18 }}>18% GST</option>
+                            <option value="28" {{ 'selected' if po.gst_percentage == 28 }}>28% GST</option>
+                            <option value="custom" {{ 'selected' if po.gst_percentage not in [0, 5, 12, 18, 28] }}>Custom GST</option>
+                        </select>
+                        <input type="number" class="form-control" id="gst_percentage" name="gst_percentage" 
+                               value="{{ po.gst_percentage }}" step="0.01" min="0" max="100" 
+                               style="display: {{ 'block' if po.gst_percentage not in [0, 5, 12, 18, 28] else 'none' }};" 
+                               placeholder="Enter GST %">
+                    </div>
                 </div>
+
+                <script>
+                function handleGstSelection() {
+                    const gstSelect = document.getElementById('gst_select');
+                    const gstInput = document.getElementById('gst_percentage');
+                    
+                    if (gstSelect.value === 'custom') {
+                        gstSelect.style.display = 'none';
+                        gstInput.style.display = 'block';
+                        gstInput.focus();
+                        gstInput.value = '';
+                    } else {
+                        gstSelect.style.display = 'block';
+                        gstInput.style.display = 'none';
+                        gstInput.value = gstSelect.value;
+                    }
+                }
+
+                // Allow user to go back to dropdown from manual input
+                document.getElementById('gst_percentage').addEventListener('blur', function() {
+                    const gstSelect = document.getElementById('gst_select');
+                    const gstInput = document.getElementById('gst_percentage');
+                    
+                    // If user entered a standard value, show dropdown again
+                    if (['0', '5', '12', '18', '28'].includes(gstInput.value)) {
+                        gstSelect.style.display = 'block';
+                        gstInput.style.display = 'none';
+                    }
+                });
+                </script>
             </div>
         </div>
 
