@@ -110,7 +110,7 @@
                                         <option value="12">12% GST</option>
                                         <option value="18" selected>18% GST</option>
                                         <option value="28">28% GST</option>
-                                        <option value="custom">Custom GST</option>
+                                        <option value="custom">Add Manually</option>
                                     </select>
                                     <input type="number" class="form-control" id="gst_percentage" name="gst_percentage" 
                                            value="18" step="0.01" min="0" max="100" onchange="calculateTotals()" 
@@ -123,6 +123,29 @@
                                     <span class="input-group-text">₹</span>
                                     <input type="text" class="form-control" id="grand_total" readonly>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Vendor Address Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="vendor_address" class="form-label">Vendor Address</label>
+                                <textarea class="form-control" id="vendor_address" name="vendor_address" rows="3" 
+                                          placeholder="Complete vendor address for purchase order"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="delivery_address" class="form-label">Delivery Address</label>
+                                <textarea class="form-control" id="delivery_address" name="delivery_address" rows="3" 
+                                          placeholder="# 302, Main Bye-Pass Road, NH-1A, Channi Himat
+JAMMU
+Jammu Jammu and Kashmir 180015
+India">Hexamed Technologies (I) Pvt Ltd.
+# 302, Main Bye-Pass Road, NH-1A, Channi Himat
+JAMMU
+Jammu Jammu and Kashmir 180015
+India
+GSTIN 01AAFCH2159F1Z2
+scm_jammu@hexamedhealthcare.com</textarea>
                             </div>
                         </div>
 
@@ -236,6 +259,17 @@ function handleGstSelection() {
         gstInput.style.display = 'none';
         gstInput.value = gstSelect.value;
         calculateTotals();
+    }
+}
+
+// Auto-populate vendor details when vendor is selected
+function updateVendorDetails() {
+    const vendorSelect = document.getElementById('vendor_id');
+    const selectedOption = vendorSelect.options[vendorSelect.selectedIndex];
+    
+    if (selectedOption.value) {
+        document.getElementById('payment_terms').value = selectedOption.dataset.paymentTerms || 'Net 30 days';
+        document.getElementById('vendor_address').value = selectedOption.dataset.address || '';
     }
 }
 

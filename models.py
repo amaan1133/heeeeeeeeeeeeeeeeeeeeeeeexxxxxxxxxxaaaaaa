@@ -376,6 +376,7 @@ class PurchaseOrder(db.Model):
     vendor_name = db.Column(db.String(200), nullable=False)
     vendor_address = db.Column(db.Text)
     vendor_gst = db.Column(db.String(50))
+    delivery_address = db.Column(db.Text)
     
     # Status and Workflow
     status = db.Column(db.String(50), default='Draft')  # Draft, MD Review Pending, Approved, Generated, Cancelled

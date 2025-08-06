@@ -1648,8 +1648,9 @@ def create_purchase_order():
         po.vendor_id = int(request.form['vendor_id'])
         vendor = Vendor.query.get(po.vendor_id)
         po.vendor_name = vendor.vendor_name
-        po.vendor_address = vendor.address
+        po.vendor_address = request.form.get('vendor_address', vendor.address or '')
         po.vendor_gst = request.form.get('vendor_gst', '')
+        po.delivery_address = request.form.get('delivery_address', '')
         
         # Terms
         po.payment_terms = request.form.get('payment_terms', 'Net 30 days')

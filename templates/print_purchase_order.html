@@ -298,6 +298,20 @@
             <div class="delivery-box">
                 <div class="box-title">Deliver To</div>
                 <div class="box-content">
+                    {% if po.delivery_address %}
+                    {{ po.delivery_address|replace('\n', '<br>')|safe }}
+                    {% else %}
+                    Hexamed Technologies (I) Pvt Ltd.<br>
+                    # 302, Main Bye-Pass Road, NH-1A, Channi Himat<br>
+                    JAMMU<br>
+                    Jammu Jammu and Kashmir 180015<br>
+                    India<br>
+                    <strong>GSTIN</strong> 01AAFCH2159F1Z2<br>
+                    scm_jammu@hexamedhealthcare.com
+                    {% endif %}
+                </div>
+            </div>
+                <div class="box-content">
                     <strong>{{ po.creator.full_name if po.creator else 'Hexamed Technologies' }}</strong><br>
                     # 302, Main Bye-Pass Road, NH-1A, Channi Himat<br>
                     JAMMU<br>
