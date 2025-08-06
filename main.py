@@ -32,6 +32,8 @@ logging.basicConfig(
 )
 
 try:
+    import flask
+    print(f"Flask version: {flask.__version__}")
     from app import app, db
 
     def create_tables_and_migrate():
