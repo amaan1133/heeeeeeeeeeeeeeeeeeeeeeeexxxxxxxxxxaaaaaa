@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 
 from models import (User, AssetRequest, UploadedFile, Approval, ActivityLog, Asset, Bill, 
                    InventoryUpdate, Vendor, ItemAssignment, AssetMaintenance, AssetDepreciation, 
-                   WarrantyAlert, ProcurementQuotation, PurchaseOrder)
+                   WarrantyAlert, ProcurementQuotation, PurchaseOrder, AssetLimit)
 
 from dateutil.relativedelta import relativedelta
 from flask import render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify
@@ -213,11 +213,20 @@ def dashboard():
 
     # Get low stock alerts for consumable assets
     low_stock_assets = []
+    exceeded_limit_assets = []
     if user.role in ['Admin', 'MD', 'Accounts/SCM']:
         low_stock_assets = Asset.query.filter(
             Asset.asset_type == 'Consumable Asset',
             Asset.current_quantity <= Asset.minimum_threshold
         ).all()
+        
+        # Get assets that exceed their limits
+        exceeded_limits = AssetLimit.query.filter(
+            AssetLimit.alert_enabled == True
+        ).join(Asset).filter(
+            Asset.current_quantity > AssetLimit.max_quantity
+        ).all()
+        exceeded_limit_assets = [limit.asset for limit in exceeded_limits]
 
     recent_activities = ActivityLog.query.order_by(ActivityLog.timestamp.desc()).limit(10).all()
 
@@ -265,7 +274,8 @@ def dashboard():
                          pending_requests=pending_requests,
                          recent_activities=recent_activities,
                          stats=stats,
-                         low_stock_assets=low_stock_assets)
+                         low_stock_assets=low_stock_assets,
+                         exceeded_limit_assets=exceeded_limit_assets)
 
 @app.route('/request', methods=['GET', 'POST'])
 @require_login
@@ -2537,6 +2547,98 @@ def create_po_from_request(request_id):
 
     vendors = Vendor.query.filter_by(is_active=True).all()
     return render_template('create_po_from_request.html', request=asset_request, vendors=vendors)
+
+# Asset Limits Management Routes
+@app.route('/asset-limits')
+@require_role(['Admin', 'MD', 'Accounts/SCM'])
+def view_asset_limits():
+    # Get all asset limits
+    asset_limits = AssetLimit.query.join(Asset).order_by(Asset.asset_tag).all()
+    
+    # Get assets that exceed their limits
+    exceeded_limits = [limit for limit in asset_limits if limit.is_exceeded and limit.alert_enabled]
+    
+    # Get assets that don't have limits set yet
+    assets_with_limits = [limit.asset_id for limit in asset_limits]
+    available_assets = Asset.query.filter(~Asset.id.in_(assets_with_limits)).all()
+    
+    user = User.query.get(session['user_id'])
+    
+    return render_template('asset_limits.html', 
+                         asset_limits=asset_limits,
+                         exceeded_limits=exceeded_limits,
+                         available_assets=available_assets,
+                         user=user)
+
+@app.route('/asset-limits/add', methods=['POST'])
+@require_role(['Admin', 'MD', 'Accounts/SCM'])
+def add_asset_limit():
+    asset_id = int(request.form['asset_id'])
+    max_quantity = int(request.form['max_quantity'])
+    alert_enabled = 'alert_enabled' in request.form
+    notes = request.form.get('notes', '')
+
+    # Check if limit already exists for this asset
+    existing_limit = AssetLimit.query.filter_by(asset_id=asset_id).first()
+    if existing_limit:
+        flash('A limit already exists for this asset. Please edit the existing limit instead.', 'warning')
+        return redirect(url_for('view_asset_limits'))
+
+    asset_limit = AssetLimit()
+    asset_limit.asset_id = asset_id
+    asset_limit.max_quantity = max_quantity
+    asset_limit.alert_enabled = alert_enabled
+    asset_limit.notes = notes
+    asset_limit.created_by = session['user_id']
+
+    db.session.add(asset_limit)
+    db.session.commit()
+
+    asset = Asset.query.get(asset_id)
+    log_activity(session['user_id'], 'Asset Limit Added', 
+                f'Added quantity limit of {max_quantity} for asset {asset.asset_tag}')
+    
+    flash('Asset limit added successfully!', 'success')
+    return redirect(url_for('view_asset_limits'))
+
+@app.route('/asset-limits/update', methods=['POST'])
+@require_role(['Admin', 'MD', 'Accounts/SCM'])
+def update_asset_limit():
+    limit_id = int(request.form['limit_id'])
+    max_quantity = int(request.form['max_quantity'])
+    alert_enabled = 'alert_enabled' in request.form
+    notes = request.form.get('notes', '')
+
+    asset_limit = AssetLimit.query.get_or_404(limit_id)
+    old_quantity = asset_limit.max_quantity
+    
+    asset_limit.max_quantity = max_quantity
+    asset_limit.alert_enabled = alert_enabled
+    asset_limit.notes = notes
+    asset_limit.updated_at = datetime.utcnow()
+
+    db.session.commit()
+
+    log_activity(session['user_id'], 'Asset Limit Updated', 
+                f'Updated limit for asset {asset_limit.asset.asset_tag} from {old_quantity} to {max_quantity}')
+    
+    flash('Asset limit updated successfully!', 'success')
+    return redirect(url_for('view_asset_limits'))
+
+@app.route('/asset-limits/delete/<int:limit_id>')
+@require_role(['Admin', 'MD', 'Accounts/SCM'])
+def delete_asset_limit(limit_id):
+    asset_limit = AssetLimit.query.get_or_404(limit_id)
+    asset_tag = asset_limit.asset.asset_tag
+    
+    db.session.delete(asset_limit)
+    db.session.commit()
+
+    log_activity(session['user_id'], 'Asset Limit Deleted', 
+                f'Deleted quantity limit for asset {asset_tag}')
+    
+    flash('Asset limit deleted successfully!', 'success')
+    return redirect(url_for('view_asset_limits'))
 
 @app.errorhandler(500)
 def internal_error(error):

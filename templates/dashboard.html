@@ -412,6 +412,36 @@
         {% endif %}
     </div>
 
+    <!-- Asset Limit Alerts -->
+    {% if exceeded_limit_assets %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i> Asset Limit Exceeded Alerts</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger mb-0">
+                        <strong>The following assets have exceeded their quantity limits:</strong>
+                        <ul class="mb-0 mt-2">
+                            {% for asset in exceeded_limit_assets %}
+                            <li>
+                                <strong>{{ asset.asset_tag }}</strong> - {{ asset.name }}: 
+                                Current quantity ({{ asset.current_quantity }}) 
+                                {% if asset.asset_type == 'Consumable Asset' %}{{ asset.unit_of_measurement }}{% endif %}
+                                <a href="{{ url_for('view_asset_limits') }}" class="btn btn-sm btn-outline-danger ms-2">
+                                    <i class="fas fa-cog"></i> Manage Limits
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Low Stock Alerts -->
     {% if low_stock_assets %}
     <div class="row">

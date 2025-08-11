@@ -438,3 +438,30 @@ class PurchaseOrder(db.Model):
 
     def __repr__(self):
         return f'<PurchaseOrder {self.po_number} - {self.vendor_name}>'
+
+class AssetLimit(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    asset_id = db.Column(db.Integer, db.ForeignKey('asset.id'), nullable=False)
+    max_quantity = db.Column(db.Integer, nullable=False)
+    alert_enabled = db.Column(db.Boolean, default=True)
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    asset = db.relationship('Asset', backref='asset_limits')
+    creator = db.relationship('User', backref='created_asset_limits')
+
+    @property
+    def is_exceeded(self):
+        """Check if current asset quantity exceeds the limit"""
+        return self.asset.current_quantity > self.max_quantity
+
+    @property
+    def is_at_limit(self):
+        """Check if current asset quantity equals the limit"""
+        return self.asset.current_quantity == self.max_quantity
+
+    def __repr__(self):
+        return f'<AssetLimit {self.asset.asset_tag} - Max: {self.max_quantity}>'
