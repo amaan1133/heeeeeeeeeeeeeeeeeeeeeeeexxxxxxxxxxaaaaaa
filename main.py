@@ -20,10 +20,13 @@ else:
     base_path = application_path
     data_path = application_path
 
-# Use Replit PostgreSQL if available, otherwise SQLite
+# Use Supabase PostgreSQL if available, otherwise SQLite
 database_url = os.environ.get('DATABASE_URL')
-if database_url and 'postgresql://' in database_url and 'replit' in database_url:
-    print(f"Using Replit PostgreSQL database")
+if database_url and 'postgresql://' in database_url:
+    print(f"Using PostgreSQL database (Supabase)")
+    # Ensure SSL mode is set for Supabase
+    if 'sslmode=' not in database_url:
+        database_url += '?sslmode=require'
     os.environ['DATABASE_URL'] = database_url
 else:
     print("Using SQLite database for development")
