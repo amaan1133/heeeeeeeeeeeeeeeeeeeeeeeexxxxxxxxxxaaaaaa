@@ -2539,6 +2539,30 @@ def update_po_status(po_id):
     flash('Purchase order status updated successfully!', 'success')
     return redirect(url_for('view_purchase_order_detail', po_id=po_id))
 
+@app.route('/classify-item/<int:request_id>', methods=['GET', 'POST'])
+@require_role(['Accounts/SCM'])
+def classify_item(request_id):
+    asset_request = AssetRequest.query.get_or_404(request_id)
+    
+    if asset_request.status != 'Approved':
+        flash('Only approved requests can be classified.', 'warning')
+        return redirect(url_for('view_requests'))
+    
+    if request.method == 'POST':
+        classification = request.form['classification']
+        asset_request.item_classification = classification
+        asset_request.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        log_activity(session['user_id'], 'Item Classified', 
+                    f'Classified request #{request_id} as {classification} item')
+        
+        flash(f'Item classified as {classification}! You can now create a purchase order.', 'success')
+        return redirect(url_for('create_po_from_request', request_id=request_id))
+    
+    return render_template('classify_item.html', request=asset_request)
+
 @app.route('/create-po-from-request/<int:request_id>', methods=['GET', 'POST'])
 @require_role(['Accounts/SCM'])
 def create_po_from_request(request_id):
