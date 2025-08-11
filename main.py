@@ -418,13 +418,13 @@ try:
         print("Starting Hexamed Asset Management System...")
         print(f"Database: {os.environ['DATABASE_URL']}")
         print(f"Uploads: {os.environ['UPLOAD_FOLDER']}")
-        print("Access the application at: http://localhost:5000")
-        print("Press Ctrl+C to stop the server")
         
         if not migration_success:
             print("Warning: Database migration had issues, but starting server anyway...")
         
-        app.run(host='0.0.0.0', port=5000, debug=True)
+        # Use PORT environment variable for Render deployment
+        port = int(os.environ.get('PORT', 5000))
+        app.run(host='0.0.0.0', port=port, debug=False)
 
 except Exception as e:
     print(f"Error starting application: {e}")
