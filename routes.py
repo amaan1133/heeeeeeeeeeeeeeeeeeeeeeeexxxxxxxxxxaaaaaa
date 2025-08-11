@@ -760,10 +760,30 @@ def add_asset():
 
         try:
             db.session.add(asset)
+            db.session.flush()  # Get the asset ID before committing
+
+            # Create asset limit if specified for consumable assets
+            if asset.asset_type == 'Consumable Asset' and request.form.get('max_quantity_limit'):
+                max_quantity_limit = int(request.form.get('max_quantity_limit'))
+                enable_limit_alert = 'enable_limit_alert' in request.form
+                
+                asset_limit = AssetLimit()
+                asset_limit.asset_id = asset.id
+                asset_limit.max_quantity = max_quantity_limit
+                asset_limit.alert_enabled = enable_limit_alert
+                asset_limit.notes = f'Auto-created limit during asset creation'
+                asset_limit.created_by = session['user_id']
+                
+                db.session.add(asset_limit)
+
             db.session.commit()
 
             log_activity(session['user_id'], 'Asset Added', f'Added new asset: {asset.asset_tag} - {asset.name}')
-            flash('Asset added successfully!', 'success')
+            
+            if asset.asset_type == 'Consumable Asset' and request.form.get('max_quantity_limit'):
+                flash('Asset and quantity limit added successfully!', 'success')
+            else:
+                flash('Asset added successfully!', 'success')
             return redirect(url_for('view_assets'))
         except Exception as e:
             db.session.rollback()
