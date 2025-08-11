@@ -25,7 +25,11 @@ if getattr(sys, 'frozen', False):
     upload_folder = os.getenv('UPLOAD_FOLDER', os.path.join(application_path, 'uploads'))
 else:
     app = Flask(__name__)
-    # Get database URL from environment
+    # Get database URL from environment (prioritize .env file for Render deployment)
+    if os.path.exists('.env'):
+        from dotenv import load_dotenv
+        load_dotenv(override=True)
+    
     DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///hexamed.db')
     
     # Add connection pooling and timeout settings for PostgreSQL

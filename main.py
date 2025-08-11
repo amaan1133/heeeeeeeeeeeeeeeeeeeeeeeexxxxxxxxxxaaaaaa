@@ -7,6 +7,11 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# For Render deployment, also try to load from environment
+if not os.environ.get('DATABASE_URL') and os.path.exists('.env'):
+    print("Loading environment from .env file...")
+    load_dotenv(override=True)
+
 if getattr(sys, 'frozen', False):
     application_path = os.path.dirname(sys.executable)
     os.chdir(application_path)
