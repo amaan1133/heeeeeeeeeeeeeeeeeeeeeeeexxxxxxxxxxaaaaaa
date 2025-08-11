@@ -772,8 +772,8 @@ def add_asset():
             db.session.add(asset)
             db.session.flush()  # Get the asset ID before committing
 
-            # Create asset limit if specified for consumable assets
-            if asset.asset_type == 'Consumable Asset' and request.form.get('max_quantity_limit'):
+            # Create asset limit if specified for any asset type
+            if request.form.get('max_quantity_limit'):
                 max_quantity_limit = int(request.form.get('max_quantity_limit'))
                 enable_limit_alert = 'enable_limit_alert' in request.form
                 
@@ -790,7 +790,7 @@ def add_asset():
 
             log_activity(session['user_id'], 'Asset Added', f'Added new asset: {asset.asset_tag} - {asset.name}')
             
-            if asset.asset_type == 'Consumable Asset' and request.form.get('max_quantity_limit'):
+            if request.form.get('max_quantity_limit'):
                 flash('Asset and quantity limit added successfully!', 'success')
             else:
                 flash('Asset added successfully!', 'success')

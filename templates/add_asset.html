@@ -137,6 +137,24 @@
                             </div>
                         </div>
 
+                        <!-- Maximum Quantity Limit for All Assets -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="max_quantity_limit" class="form-label">Maximum Quantity Limit</label>
+                                <input type="number" class="form-control" id="max_quantity_limit" name="max_quantity_limit" min="1">
+                                <div class="form-text">Set alert when quantity exceeds this limit</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="enable_limit_alert" class="form-label">Enable Limit Alert</label>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="enable_limit_alert" name="enable_limit_alert" checked>
+                                    <label class="form-check-label" for="enable_limit_alert">
+                                        Alert when quantity exceeds limit
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Inventory Fields for Consumable Assets -->
                         <div id="inventoryFields" style="display: none;">
                             <h6 class="text-primary mb-3">Inventory Management</h6>
@@ -160,22 +178,6 @@
                                         <option value="Meter">Meter</option>
                                         <option value="Pack">Pack</option>
                                     </select>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="max_quantity_limit" class="form-label">Maximum Quantity Limit</label>
-                                    <input type="number" class="form-control" id="max_quantity_limit" name="max_quantity_limit" min="1">
-                                    <div class="form-text">Set alert when quantity exceeds this limit</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="enable_limit_alert" class="form-label">Enable Limit Alert</label>
-                                    <div class="form-check mt-2">
-                                        <input class="form-check-input" type="checkbox" id="enable_limit_alert" name="enable_limit_alert" checked>
-                                        <label class="form-check-label" for="enable_limit_alert">
-                                            Alert when quantity exceeds limit
-                                        </label>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -219,10 +221,9 @@ function toggleInventoryFields() {
         document.getElementById('current_quantity').required = false;
         document.getElementById('minimum_threshold').required = false;
         document.getElementById('unit_of_measurement').required = false;
-        // Also clear the limit fields
-        document.getElementById('max_quantity_limit').value = '';
-        document.getElementById('enable_limit_alert').checked = false;
     }
+    
+    // Maximum limit is available for all asset types, so don't clear it
 }
 </script>
 {% endblock %}
