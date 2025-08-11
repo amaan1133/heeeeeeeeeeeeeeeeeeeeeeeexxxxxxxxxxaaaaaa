@@ -23,3 +23,15 @@ werkzeug
 xlrd
 psycopg2-binary
 python-dotenv>=1.0.0
+email-validator
+flask
+flask-sqlalchemy
+gunicorn
+openpyxl
+pandas
+psycopg2-binary
+python-dateutil
+python-dotenv
+sqlalchemy
+werkzeug
+xlrd
