@@ -38,7 +38,7 @@ else:
         app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
     upload_folder = os.getenv('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'uploads'))
 
-logging.info(f"Database URL: {database_url}")
+logging.info(f"Database URL: {DATABASE_URL}")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production')
