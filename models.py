@@ -78,7 +78,8 @@ class UploadedFile(db.Model):
     mime_type = db.Column(db.String(100))
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    request_id = db.Column(db.Integer, db.ForeignKey('asset_request.id'), nullable=False)
+    request_id = db.Column(db.Integer, db.ForeignKey('asset_request.id'), nullable=True)
+    po_id = db.Column(db.Integer, db.ForeignKey('purchase_order.id'), nullable=True)
 
     def __repr__(self):
         return f'<UploadedFile {self.original_filename}>'
@@ -413,6 +414,7 @@ class PurchaseOrder(db.Model):
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_pos')
     updater = db.relationship('User', foreign_keys=[updated_by], backref='updated_pos')
     md_approver = db.relationship('User', foreign_keys=[approved_by_md], backref='approved_pos')
+    uploaded_files = db.relationship('UploadedFile', backref='purchase_order', lazy=True)
 
     def generate_po_number(self):
         """Generate unique PO number"""

@@ -2393,6 +2393,9 @@ def create_purchase_order():
         po.generate_po_number()
         po.calculate_totals()
         
+        db.session.add(po)
+        db.session.flush()  # Get the PO ID before handling files
+        
         # Check if MD approval required for Specific items
         if po.item_type == 'Specific':
             po.requires_md_approval = True
@@ -2433,7 +2436,6 @@ def create_purchase_order():
         else:
             po.status = 'Approved'
 
-        db.session.add(po)
         db.session.commit()
 
         log_activity(session['user_id'], 'PO Created', f'Created purchase order {po.po_number}')

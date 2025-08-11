@@ -76,6 +76,18 @@ try:
                 if 'fulfillment_notes' not in asset_request_columns:
                     migrations.append('ALTER TABLE asset_request ADD COLUMN fulfillment_notes TEXT')
 
+                # Check and update uploaded_file table constraints
+                uploaded_file_columns = [col['name'] for col in inspector.get_columns('uploaded_file')]
+                
+                if 'po_id' not in uploaded_file_columns:
+                    migrations.append('ALTER TABLE uploaded_file ADD COLUMN po_id INTEGER')
+                
+                # Make request_id nullable if it isn't already
+                try:
+                    migrations.append('ALTER TABLE uploaded_file ALTER COLUMN request_id DROP NOT NULL')
+                except Exception:
+                    pass  # Already nullable or constraint doesn't exist
+
                 # Check and add missing columns to user table
                 user_columns = [col['name'] for col in inspector.get_columns('user')]
 
