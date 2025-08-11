@@ -56,7 +56,7 @@ def create_deployment_package():
     # Create .env file with Render PostgreSQL configuration
     env_content = """# Hexamed Asset Management System - Render Deployment
 # Database Configuration (Render PostgreSQL)
-DATABASE_URL=postgresql://hexamed_6i8z_user:0VKd5SEHuTIu0lvPSk9WeghNvYf1GJQr@dpg-d2cqoc8gjchc739os36g-a.oregon-postgres.render.com/hexamed_6i8z
+DATABASE_URL=postgresql://hexamed:aN9CwJhCliBvNbz0VwGdf8ETvb9pM7GV@dpg-d2csqgoc8gjchc739os36g-a.oregon-postgres.render.com/hexamed_zxxw
 
 # Flask Configuration
 SECRET_KEY=hexamed-render-production-secret-key-change-this-in-production
