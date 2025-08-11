@@ -1,4 +1,3 @@
-
 import os
 import sys
 import logging
@@ -10,18 +9,37 @@ if getattr(sys, 'frozen', False):
     template_folder = os.path.join(sys._MEIPASS, 'templates')
     static_folder = os.path.join(sys._MEIPASS, 'static')
     app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
-    
+
     application_path = os.path.dirname(sys.executable)
-    database_url = os.getenv('DATABASE_URL', 'postgresql://hexamed:OuSKUPQTl0akpyyEBqq0pRHzRliwbwjU@dpg-d29l04mr433s739gju60-a.oregon-postgres.render.com/hexamed')
+    # Get database URL from environment variable
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL environment variable is required")
+
+    # Handle SQLite vs PostgreSQL URL format
+    if DATABASE_URL.startswith('postgresql://'):
+        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    else:
+        # Fallback to SQLite for development
+        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
     upload_folder = os.getenv('UPLOAD_FOLDER', os.path.join(application_path, 'uploads'))
 else:
     app = Flask(__name__)
-    database_url = os.getenv('DATABASE_URL', 'postgresql://hexamed:OuSKUPQTl0akpyyEBqq0pRHzRliwbwjU@dpg-d29l04mr433s739gju60-a.oregon-postgres.render.com/hexamed')
+    # Get database URL from environment variable
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL environment variable is required")
+
+    # Handle SQLite vs PostgreSQL URL format
+    if DATABASE_URL.startswith('postgresql://'):
+        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    else:
+        # Fallback to SQLite for development
+        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
     upload_folder = os.getenv('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'uploads'))
 
 logging.info(f"Database URL: {database_url}")
 
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production')
 
@@ -40,10 +58,10 @@ import routes
 with app.app_context():
     try:
         db.create_all()
-        
+
         from models import User, Vendor
         from werkzeug.security import generate_password_hash
-        
+
         admin_user = User.query.filter_by(username='admin').first()
         if not admin_user:
             admin_user = User()
@@ -57,7 +75,7 @@ with app.app_context():
             db.session.add(admin_user)
             db.session.commit()
             logging.info("Admin user created with username: admin, password: hexamed123")
-            
+
         accounts_user = User.query.filter_by(username='accounts').first()
         if not accounts_user:
             accounts_user = User()
@@ -109,10 +127,10 @@ with app.app_context():
                 for key, value in vendor_data.items():
                     setattr(vendor, key, value)
                 db.session.add(vendor)
-        
+
         db.session.commit()
         logging.info("Sample vendors created")
-            
+
     except Exception as e:
         logging.error(f"Database initialization error: {e}")
 

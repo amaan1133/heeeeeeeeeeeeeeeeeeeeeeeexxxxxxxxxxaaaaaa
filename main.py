@@ -2,6 +2,10 @@ import os
 import sys
 import logging
 from sqlalchemy import inspect, text
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 if getattr(sys, 'frozen', False):
     application_path = os.path.dirname(sys.executable)
@@ -16,7 +20,12 @@ else:
     base_path = application_path
     data_path = application_path
 
-os.environ['DATABASE_URL'] = 'postgresql://hexamed:OuSKUPQTl0akpyyEBqq0pRHzRliwbwjU@dpg-d29l04mr433s739gju60-a.oregon-postgres.render.com/hexamed'
+# Use environment variable or fall back to default
+if not os.environ.get('DATABASE_URL'):
+    print("Warning: DATABASE_URL not set in environment variables!")
+    print("Please update your .env file with your Supabase connection string")
+    sys.exit(1)
+
 os.environ['UPLOAD_FOLDER'] = os.path.join(data_path, 'uploads')
 
 uploads_dir = os.environ['UPLOAD_FOLDER']

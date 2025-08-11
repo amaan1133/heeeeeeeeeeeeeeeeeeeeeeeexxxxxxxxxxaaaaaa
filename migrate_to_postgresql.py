@@ -25,6 +25,12 @@ def get_postgresql_connection():
     database_url = os.environ.get('DATABASE_URL')
     if not database_url:
         raise ValueError("DATABASE_URL environment variable not set")
+    
+    # Handle Supabase SSL requirements
+    if 'supabase.co' in database_url:
+        if '?sslmode=' not in database_url:
+            database_url += '?sslmode=require'
+    
     return psycopg2.connect(database_url)
 
 def migrate_table_data(sqlite_conn, pg_conn, table_name, columns_mapping=None):
