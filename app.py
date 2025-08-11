@@ -29,13 +29,13 @@ else:
     DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///hexamed.db')
     
     # Add connection pooling and timeout settings for PostgreSQL
-    if 'postgresql://' in DATABASE_URL:
+    if 'postgresql' in DATABASE_URL:
         # Add connection pool settings for better reliability
         app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
             'pool_pre_ping': True,
             'pool_recycle': 300,
             'connect_args': {
-                'connect_timeout': 10,
+                'connect_timeout': 30,
                 'application_name': 'hexamed_asset_management'
             }
         }
@@ -55,6 +55,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 from models import db
+from sqlalchemy import text
 
 db.init_app(app)
 
@@ -64,11 +65,12 @@ with app.app_context():
     try:
         # Test database connection first
         print("Testing database connection...")
-        connection = db.engine.connect()
-        connection.close()
+        with db.engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
         print("Database connection successful!")
 
         db.create_all()
+        print("Database tables created successfully!")
 
         from models import User, Vendor
         from werkzeug.security import generate_password_hash

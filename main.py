@@ -416,8 +416,8 @@ try:
         migration_success = create_tables_and_migrate()
         
         print("Starting Hexamed Asset Management System...")
-        print(f"Database: {os.environ['DATABASE_URL']}")
-        print(f"Uploads: {os.environ['UPLOAD_FOLDER']}")
+        print(f"Database: {os.environ.get('DATABASE_URL', 'sqlite:///hexamed.db')}")
+        print(f"Uploads: {os.environ.get('UPLOAD_FOLDER', 'uploads')}")
         
         if not migration_success:
             print("Warning: Database migration had issues, but starting server anyway...")
