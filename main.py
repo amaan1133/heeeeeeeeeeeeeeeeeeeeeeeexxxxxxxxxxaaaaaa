@@ -20,11 +20,14 @@ else:
     base_path = application_path
     data_path = application_path
 
-# Use environment variable or fall back to default
-if not os.environ.get('DATABASE_URL'):
-    print("Warning: DATABASE_URL not set in environment variables!")
-    print("Please update your .env file with your Supabase connection string")
-    sys.exit(1)
+# Use environment variable or fall back to SQLite for development
+database_url = os.environ.get('DATABASE_URL')
+if not database_url:
+    print("Warning: DATABASE_URL not set, using SQLite fallback for development")
+    database_url = 'sqlite:///hexamed.db'
+    os.environ['DATABASE_URL'] = database_url
+else:
+    print(f"Using database: {database_url}")
 
 os.environ['UPLOAD_FOLDER'] = os.path.join(data_path, 'uploads')
 
@@ -391,18 +394,18 @@ try:
                 return False
 
     if __name__ == '__main__':
-        if create_tables_and_migrate():
-            print("Starting Hexamed Asset Management System...")
-            print(f"Database: {os.environ['DATABASE_URL']}")
-            print(f"Uploads: {os.environ['UPLOAD_FOLDER']}")
-            print("Access the application at: http://localhost:5000")
-            print("Press Ctrl+C to stop the server")
-
-            app.run(host='0.0.0.0', port=5000, debug=True)
-        else:
-            print("Database migration failed. Please check the logs.")
-            input("Press Enter to exit...")
-            sys.exit(1)
+        migration_success = create_tables_and_migrate()
+        
+        print("Starting Hexamed Asset Management System...")
+        print(f"Database: {os.environ['DATABASE_URL']}")
+        print(f"Uploads: {os.environ['UPLOAD_FOLDER']}")
+        print("Access the application at: http://localhost:5000")
+        print("Press Ctrl+C to stop the server")
+        
+        if not migration_success:
+            print("Warning: Database migration had issues, but starting server anyway...")
+        
+        app.run(host='0.0.0.0', port=5000, debug=True)
 
 except Exception as e:
     print(f"Error starting application: {e}")

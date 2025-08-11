@@ -57,6 +57,10 @@ import routes
 
 with app.app_context():
     try:
+        # Test database connection first
+        with app.app_context():
+            db.engine.connect()
+
         db.create_all()
 
         from models import User, Vendor
@@ -133,6 +137,7 @@ with app.app_context():
 
     except Exception as e:
         logging.error(f"Database initialization error: {e}")
+        logging.info("App will start but database functionality may be limited")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

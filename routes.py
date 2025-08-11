@@ -112,11 +112,19 @@ def can_approve_request(user, asset_request):
 
     return False
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint that works without database"""
+    return {'status': 'OK', 'message': 'Hexamed Asset Management System is running'}, 200
+
 @app.route('/')
 def index():
-    if 'user_id' in session:
-        return redirect(url_for('dashboard'))
-    return render_template('login.html')
+    try:
+        if 'user_id' in session:
+            return redirect(url_for('dashboard'))
+        return render_template('login.html')
+    except Exception as e:
+        return f"<h1>Hexamed Asset Management System</h1><p>Server is running but database connection failed: {str(e)}</p><p><a href='/health'>Health Check</a></p>", 500
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
