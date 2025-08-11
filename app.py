@@ -25,13 +25,8 @@ if getattr(sys, 'frozen', False):
     upload_folder = os.getenv('UPLOAD_FOLDER', os.path.join(application_path, 'uploads'))
 else:
     app = Flask(__name__)
-    # Get database URL from environment variable
-    DATABASE_URL = os.environ.get('DATABASE_URL')
-    if not DATABASE_URL:
-        print("DATABASE_URL not found, falling back to SQLite")
-        DATABASE_URL = 'sqlite:///hexamed.db'
-
-    # Configure database URI
+    # Get database URL from environment
+    DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///hexamed.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
     upload_folder = os.getenv('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'uploads'))
 

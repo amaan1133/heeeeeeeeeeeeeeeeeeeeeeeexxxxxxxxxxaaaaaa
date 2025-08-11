@@ -20,17 +20,15 @@ else:
     base_path = application_path
     data_path = application_path
 
-# Use environment variable or fall back to SQLite for development
+# Use Replit PostgreSQL if available, otherwise SQLite
 database_url = os.environ.get('DATABASE_URL')
-if not database_url:
-    print("Warning: DATABASE_URL not set, using SQLite fallback for development")
-    database_url = 'sqlite:///hexamed.db'
+if database_url and 'postgresql://' in database_url and 'replit' in database_url:
+    print(f"Using Replit PostgreSQL database")
     os.environ['DATABASE_URL'] = database_url
 else:
-    print(f"Using database: {database_url}")
-    # Handle Replit PostgreSQL URL format
-    if database_url.startswith('postgresql://') and 'replit' in database_url:
-        print("Detected Replit PostgreSQL database")
+    print("Using SQLite database for development")
+    database_url = 'sqlite:///hexamed.db'
+    os.environ['DATABASE_URL'] = database_url
 
 os.environ['UPLOAD_FOLDER'] = os.path.join(data_path, 'uploads')
 
