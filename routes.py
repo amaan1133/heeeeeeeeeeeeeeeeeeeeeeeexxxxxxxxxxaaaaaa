@@ -752,11 +752,21 @@ def add_asset():
         asset.warranty_expiry = datetime.strptime(request.form['warranty_expiry'], '%Y-%m-%d').date() if request.form['warranty_expiry'] else None
         asset.notes = request.form.get('notes', '')
 
+        # Set quantity field for all assets
+        quantity = int(request.form.get('quantity', 1))
+        
         # Set inventory fields for consumable assets
         if asset.asset_type == 'Consumable Asset':
-            asset.current_quantity = int(request.form.get('current_quantity', 1))
+            # Use current_quantity override if provided, otherwise use quantity
+            current_quantity_override = request.form.get('current_quantity')
+            asset.current_quantity = int(current_quantity_override) if current_quantity_override else quantity
             asset.minimum_threshold = int(request.form.get('minimum_threshold', 5))
             asset.unit_of_measurement = request.form.get('unit_of_measurement', 'Piece')
+        else:
+            # For fixed assets, use quantity directly
+            asset.current_quantity = quantity
+            asset.minimum_threshold = 1
+            asset.unit_of_measurement = 'Piece'
 
         try:
             db.session.add(asset)

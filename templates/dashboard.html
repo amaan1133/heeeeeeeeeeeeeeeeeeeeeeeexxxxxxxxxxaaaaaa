@@ -267,8 +267,8 @@
         </div>
     </div>
 
-    <div class="row">
-        <!-- Recent Requests -->
+    <!-- Recent Requests -->
+    <div class="row mb-4">
         <div class="col-lg-6 mb-4">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -421,16 +421,17 @@
                     <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i> Asset Limit Exceeded Alerts</h6>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-danger mb-0">
-                        <strong>The following assets have exceeded their quantity limits:</strong>
-                        <ul class="mb-0 mt-2">
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Quantity Limit Exceeded - Red Alert!</h6>
+                        <p class="mb-2">The following assets have exceeded their maximum quantity limits:</p>
+                        <ul class="mb-0">
                             {% for asset in exceeded_limit_assets %}
                             <li>
-                                <strong>{{ asset.asset_tag }}</strong> - {{ asset.name }}: 
-                                Current quantity ({{ asset.current_quantity }}) 
-                                {% if asset.asset_type == 'Consumable Asset' %}{{ asset.unit_of_measurement }}{% endif %}
-                                <a href="{{ url_for('view_asset_limits') }}" class="btn btn-sm btn-outline-danger ms-2">
-                                    <i class="fas fa-cog"></i> Manage Limits
+                                <strong class="text-danger">{{ asset.asset_tag }}</strong> - {{ asset.name }} 
+                                <br><small>Current Quantity: <span class="text-danger">{{ asset.current_quantity }}</span> | 
+                                Maximum Limit: {{ asset.asset_limits[0].max_quantity }}</small>
+                                <a href="{{ url_for('view_asset_detail', asset_id=asset.id) }}" class="btn btn-sm btn-outline-danger ms-2">
+                                    <i class="fas fa-eye"></i> View
                                 </a>
                             </li>
                             {% endfor %}

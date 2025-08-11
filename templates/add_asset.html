@@ -50,7 +50,11 @@
                         </div>
 
                         <div class="row mb-3">
-                            <div class="col-md-6"></div>
+                            <div class="col-md-6">
+                                <label for="quantity" class="form-label">Quantity *</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" min="1" value="1" required>
+                                <div class="form-text">Number of assets to add</div>
+                            </div>
                             <div class="col-md-6">
                                 <label for="condition" class="form-label">Condition *</label>
                                 <select class="form-select" id="condition" name="condition" required>
@@ -138,8 +142,9 @@
                             <h6 class="text-primary mb-3">Inventory Management</h6>
                             <div class="row mb-3">
                                 <div class="col-md-4">
-                                    <label for="current_quantity" class="form-label">Current Quantity</label>
+                                    <label for="current_quantity" class="form-label">Initial Stock (Override)</label>
                                     <input type="number" class="form-control" id="current_quantity" name="current_quantity" min="0">
+                                    <div class="form-text">Leave empty to use quantity field above</div>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="minimum_threshold" class="form-label">Minimum Threshold</label>
