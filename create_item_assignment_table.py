@@ -13,7 +13,6 @@ def create_item_assignment_table():
             if 'item_assignment' not in existing_tables:
                 print("Creating ItemAssignment table...")
                 
-                # Create the item_assignment table
                 db.session.execute(text("""
                     CREATE TABLE item_assignment (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
