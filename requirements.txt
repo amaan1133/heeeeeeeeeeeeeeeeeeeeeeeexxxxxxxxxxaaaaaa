@@ -21,3 +21,5 @@ python-dateutil
 sqlalchemy
 werkzeug
 xlrd
+psycopg2-binary
+python-dotenv
