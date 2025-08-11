@@ -28,14 +28,11 @@ else:
     # Get database URL from environment variable
     DATABASE_URL = os.environ.get('DATABASE_URL')
     if not DATABASE_URL:
-        raise ValueError("DATABASE_URL environment variable is required")
+        print("DATABASE_URL not found, falling back to SQLite")
+        DATABASE_URL = 'sqlite:///hexamed.db'
 
-    # Handle SQLite vs PostgreSQL URL format
-    if DATABASE_URL.startswith('postgresql://'):
-        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-    else:
-        # Fallback to SQLite for development
-        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    # Configure database URI
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
     upload_folder = os.getenv('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'uploads'))
 
 logging.info(f"Database URL: {DATABASE_URL}")
@@ -58,8 +55,10 @@ import routes
 with app.app_context():
     try:
         # Test database connection first
-        with app.app_context():
-            db.engine.connect()
+        print("Testing database connection...")
+        connection = db.engine.connect()
+        connection.close()
+        print("Database connection successful!")
 
         db.create_all()
 

@@ -28,6 +28,9 @@ if not database_url:
     os.environ['DATABASE_URL'] = database_url
 else:
     print(f"Using database: {database_url}")
+    # Handle Replit PostgreSQL URL format
+    if database_url.startswith('postgresql://') and 'replit' in database_url:
+        print("Detected Replit PostgreSQL database")
 
 os.environ['UPLOAD_FOLDER'] = os.path.join(data_path, 'uploads')
 
