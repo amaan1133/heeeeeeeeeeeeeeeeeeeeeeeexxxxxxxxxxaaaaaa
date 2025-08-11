@@ -28,6 +28,21 @@ if database_url and 'postgresql://' in database_url:
     if 'sslmode=' not in database_url:
         database_url += '?sslmode=require'
     os.environ['DATABASE_URL'] = database_url
+    print("Testing Supabase connection...")
+    try:
+        # Test connection with a simple query
+        import psycopg2
+        conn = psycopg2.connect(database_url)
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.close()
+        conn.close()
+        print("✅ Supabase connection successful!")
+    except Exception as e:
+        print(f"❌ Supabase connection failed: {e}")
+        print("Falling back to SQLite for development...")
+        database_url = 'sqlite:///hexamed.db'
+        os.environ['DATABASE_URL'] = database_url
 else:
     print("Using SQLite database for development")
     database_url = 'sqlite:///hexamed.db'

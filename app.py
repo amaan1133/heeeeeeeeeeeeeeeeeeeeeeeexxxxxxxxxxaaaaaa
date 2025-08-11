@@ -27,10 +27,23 @@ else:
     app = Flask(__name__)
     # Get database URL from environment
     DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///hexamed.db')
+    
+    # Add connection pooling and timeout settings for PostgreSQL
+    if 'postgresql://' in DATABASE_URL:
+        # Add connection pool settings for better reliability
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_pre_ping': True,
+            'pool_recycle': 300,
+            'connect_args': {
+                'connect_timeout': 10,
+                'application_name': 'hexamed_asset_management'
+            }
+        }
+    
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
     upload_folder = os.getenv('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'uploads'))
 
-logging.info(f"Database URL: {DATABASE_URL}")
+logging.info(f"Database URL configured: {'PostgreSQL (Supabase)' if 'postgresql://' in DATABASE_URL else 'SQLite'}")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production')
